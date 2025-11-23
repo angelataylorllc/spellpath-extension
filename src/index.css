@@ -1,3 +1,108 @@
+/* Import Google Fonts for each genre */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Creepster&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bangers&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom genre-specific component styles */
+@layer components {
+  /* Sci-Fi Theme */
+  .genre-scifi {
+    @apply font-scifi bg-gradient-to-br from-scifi-50 via-blue-50 to-indigo-100;
+  }
+  
+  .genre-scifi .genre-title {
+    @apply text-scifi-700 font-bold tracking-wider;
+  }
+  
+  .genre-scifi .genre-button {
+    @apply bg-scifi-600 hover:bg-scifi-700 text-white border border-scifi-400 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .genre-scifi .genre-card {
+    @apply bg-white/80 backdrop-blur-sm border border-scifi-200 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  /* Fantasy Theme */
+  .genre-fantasy {
+    @apply font-fantasy bg-gradient-to-br from-fantasy-50 via-purple-50 to-pink-100;
+  }
+  
+  .genre-fantasy .genre-title {
+    @apply text-fantasy-700 font-semibold tracking-wide;
+  }
+  
+  .genre-fantasy .genre-button {
+    @apply bg-fantasy-600 hover:bg-fantasy-700 text-white border border-fantasy-400 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+  
+  .genre-fantasy .genre-card {
+    @apply bg-white/80 backdrop-blur-sm border border-fantasy-200 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  /* Detective Theme */
+  .genre-detective {
+    @apply font-detective bg-gradient-to-br from-detective-50 via-gray-50 to-slate-100;
+  }
+  
+  .genre-detective .genre-title {
+    @apply text-detective-700 font-medium tracking-normal;
+  }
+  
+  .genre-detective .genre-button {
+    @apply bg-detective-600 hover:bg-detective-700 text-white border border-detective-400 shadow-md hover:shadow-lg transition-all duration-300;
+  }
+  
+  .genre-detective .genre-card {
+    @apply bg-white/90 backdrop-blur-sm border border-detective-200 shadow-md hover:shadow-lg transition-all duration-300;
+  }
+
+  /* Horror Theme */
+  .genre-horror {
+    @apply font-horror bg-gradient-to-br from-horror-50 via-red-50 to-orange-100;
+  }
+  
+  .genre-horror .genre-title {
+    @apply text-horror-700 font-bold tracking-wide;
+  }
+  
+  .genre-horror .genre-button {
+    @apply bg-horror-600 hover:bg-horror-700 text-white border border-horror-400 shadow-lg hover:shadow-xl transition-all duration-300 animate-pulse-slow;
+  }
+  
+  .genre-horror .genre-card {
+    @apply bg-white/70 backdrop-blur-sm border border-horror-200 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  /* Adventure Theme */
+  .genre-adventure {
+    @apply font-adventure bg-gradient-to-br from-adventure-50 via-green-50 to-emerald-100;
+  }
+  
+  .genre-adventure .genre-title {
+    @apply text-adventure-700 font-bold tracking-wider;
+  }
+  
+  .genre-adventure .genre-button {
+    @apply bg-adventure-600 hover:bg-adventure-700 text-white border border-adventure-400 shadow-lg hover:shadow-xl transition-all duration-300 animate-bounce-slow;
+  }
+  
+  .genre-adventure .genre-card {
+    @apply bg-white/80 backdrop-blur-sm border border-adventure-200 shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  /* Common genre elements */
+  .genre-input {
+    @apply bg-white/90 backdrop-blur-sm border-2 focus:ring-2 focus:ring-opacity-50 transition-all duration-300;
+  }
+  
+  .genre-select {
+    @apply bg-white/90 backdrop-blur-sm border-2 focus:ring-2 focus:ring-opacity-50 transition-all duration-300;
+  }
+}

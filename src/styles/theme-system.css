@@ -1,0 +1,242 @@
+/* ============================================
+   THEME SYSTEM - Data Attribute Based
+   ============================================
+   Uses [data-theme] and [data-mode] on <html>
+   ============================================ */
+
+/* Shared text colors by mode */
+:root[data-mode="day"] {
+  --color-text: #1C1C1C;
+  --color-text-muted: #4B4B4B;
+}
+
+:root[data-mode="night"] {
+  --color-text: #F5F5F5;
+  --color-text-muted: #C4C4C4;
+}
+
+/* ============================================
+   ADVENTURE THEME
+   ============================================ */
+
+/* Adventure – Day */
+:root[data-mode="day"][data-theme="adventure"] {
+  --color-bg: #EAD8B1;
+  --color-bg-alt: #F2B880;
+  --color-surface: #8B5E3C;
+  --color-accent: #A63A24;
+  --color-accent-soft: #D38F50;
+  --color-highlight: #F2B880;
+  
+  /* Map to existing variable names for compatibility */
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-bg);
+  --font-display: "Bangers", cursive;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+/* Adventure – Night */
+:root[data-mode="night"][data-theme="adventure"] {
+  --color-bg: #2C1B10;
+  --color-bg-alt: #5A3825;
+  --color-surface: #5A3825;
+  --color-accent: #C96A2B;
+  --color-accent-soft: #8C3B1C;
+  --color-highlight: #F0D197;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-highlight);
+  --font-display: "Bangers", cursive;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+/* ============================================
+   MYSTERY THEME
+   ============================================ */
+
+/* Mystery – Day */
+:root[data-mode="day"][data-theme="mystery"] {
+  --color-bg: #E9E2D0;
+  --color-bg-alt: #C4A484;
+  --color-surface: #6A5139;
+  --color-accent: #B08D57;
+  --color-accent-soft: #2E4057;
+  --color-highlight: #C4A484;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-bg);
+  --font-display: "Special Elite", monospace;
+  --font-body: "Merriweather", serif;
+}
+
+/* Mystery – Night */
+:root[data-mode="night"][data-theme="mystery"] {
+  --color-bg: #2A1F16;
+  --color-bg-alt: #5C4631;
+  --color-surface: #5C4631;
+  --color-accent: #A67C52;
+  --color-accent-soft: #3C3F4A;
+  --color-highlight: #D4B483;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-highlight);
+  --font-display: "Special Elite", monospace;
+  --font-body: "Merriweather", serif;
+}
+
+/* ============================================
+   SCI-FI THEME
+   ============================================ */
+
+/* Sci-Fi – Day */
+:root[data-mode="day"][data-theme="scifi"] {
+  --color-bg: #E0E6EB;
+  --color-bg-alt: #C0A060;
+  --color-surface: #2E3B44;
+  --color-accent: #4A90A4;
+  --color-accent-soft: #7B3F61;
+  --color-highlight: #C0A060;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-bg);
+  --font-display: "Orbitron", sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+/* Sci-Fi – Night */
+:root[data-mode="night"][data-theme="scifi"] {
+  --color-bg: #0D0F10;
+  --color-bg-alt: #1C2A35;
+  --color-surface: #1C2A35;
+  --color-accent: #1ED3E8;
+  --color-accent-soft: #D64B8C;
+  --color-highlight: #FF9B2F;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-bg);
+  --font-display: "Orbitron", sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+}
+
+/* ============================================
+   FANTASY THEME
+   ============================================ */
+
+/* Fantasy – Day */
+:root[data-mode="day"][data-theme="fantasy"] {
+  --color-bg: #F6E6D9;
+  --color-bg-alt: #C080A1;
+  --color-surface: #8B6E9C;
+  --color-accent: #A3C6C4;
+  --color-accent-soft: #DAA520;
+  --color-highlight: #C080A1;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-bg);
+  --font-display: "Cinzel", serif;
+  --font-body: "Playfair Display", serif;
+}
+
+/* Fantasy – Night */
+:root[data-mode="night"][data-theme="fantasy"] {
+  --color-bg: #2C0454;
+  --color-bg-alt: #214267;
+  --color-surface: #214267;
+  --color-accent: #9370DB;
+  --color-accent-soft: #B4E1E4;
+  --color-highlight: #FFD68A;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-bg);
+  --font-display: "Cinzel", serif;
+  --font-body: "Playfair Display", serif;
+}
+
+/* ============================================
+   HORROR THEME
+   ============================================ */
+
+/* Horror – Day */
+:root[data-mode="day"][data-theme="horror"] {
+  --color-bg: #EAEAEA;
+  --color-bg-alt: #C4C4C4;
+  --color-surface: #C4C4C4;
+  --color-accent: #8B0000;
+  --color-accent-soft: #4A2C2C;
+  --color-highlight: #5E5E5E;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-bg);
+  --font-display: "Creepster", cursive;
+  --font-body: "Spectral SC", serif;
+}
+
+/* Horror – Night */
+:root[data-mode="night"][data-theme="horror"] {
+  --color-bg: #0A0A0A;
+  --color-bg-alt: #2B2B2B;
+  --color-surface: #2B2B2B;
+  --color-accent: #8B0000;
+  --color-accent-soft: #3C1F1F;
+  --color-highlight: #E5E5E5;
+  
+  --bg: var(--color-bg);
+  --fg: var(--color-text);
+  --accent: var(--color-accent);
+  --link: var(--color-accent-soft);
+  --btn-fg: var(--color-highlight);
+  --font-display: "Creepster", cursive;
+  --font-body: "Spectral SC", serif;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Use these in your components */
+.app {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.chat-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent-soft);
+}
+
+.button-primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.token-highlight {
+  background: var(--color-highlight);
+}
+

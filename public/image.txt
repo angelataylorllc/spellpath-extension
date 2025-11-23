@@ -1,0 +1,8 @@
+/public/images/scifi/starfield_tile.webp
+/public/images/fantasy/parchment_cover.webp
+/public/images/horror/wall_grunge.webp
+/public/images/mystery/paper_fibers.webp
+/public/images/action/map_texture.webp
+/public/images/overlays/grain_8bit.webp
+/public/images/overlays/fog_tile.webp
+/public/images/overlays/dust_particles.webp
