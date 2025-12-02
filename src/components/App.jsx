@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import '../index.css';
 import '../styles/genres.css';
 import '../styles/theme-system.css';
@@ -23,6 +23,7 @@ function App() {
   const [quizData, setQuizData] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
+  const userAnswersRef = useRef(userAnswers);
   const [showSettings, setShowSettings] = useState(false);
   const [storyData, setStoryData] = useState(null);
   const [isGeneratingContent, setIsGeneratingContent] = useState(false);
@@ -139,10 +140,15 @@ function App() {
     }
   };
 
+  // Keep ref in sync with userAnswers
+  useEffect(() => {
+    userAnswersRef.current = userAnswers;
+  }, [userAnswers]);
+
   // Safety: if we ever land on the story phase without data, kick off generation.
   useEffect(() => {
     if (currentPhase === "story" && quizData && !storyData && !isGeneratingContent && !generationError) {
-      startContentGeneration(userAnswers);
+      startContentGeneration(userAnswersRef.current);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPhase, quizData]);
