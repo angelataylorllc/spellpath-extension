@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build && cp -r extension/* dist/",
+    "api": "node server.js",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.21.2",
+    "openai": "^4.79.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
