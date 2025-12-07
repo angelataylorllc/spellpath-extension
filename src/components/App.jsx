@@ -1,10 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import '../index.css';
 import '../styles/genres.css';
-import '../styles/theme-system.css';
+import '../styles/theme-tokens.css';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
-import { generateContent } from '../services/contentService';
+import { generateContent } from '../services/contentApi';
 
 const STORY_GENRES = [
   { id: 'scifi', name: '🚀 Sci-Fi', description: 'Space exploration and futuristic learning', icon: '🚀', theme: 'scifi' },
