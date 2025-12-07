@@ -1,18 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import '../index.css';
-import '../styles/genres.css';
 import '../styles/theme-tokens.css';
+import { STORY_GENRES } from '../config/genres';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
 import { generateContent } from '../services/contentApi';
-
-const STORY_GENRES = [
-  { id: 'scifi', name: '🚀 Sci-Fi', description: 'Space exploration and futuristic learning', icon: '🚀', theme: 'scifi' },
-  { id: 'fantasy', name: '🧙‍♂️ Fantasy', description: 'Magical quests and enchanted knowledge', icon: '🧙‍♂️', theme: 'fantasy' },
-  { id: 'detective', name: '🔍 Mystery', description: 'Mystery solving and clue gathering', icon: '🔍', theme: 'mystery' },
-  { id: 'horror', name: '👻 Horror', description: 'Spooky discoveries and dark secrets', icon: '👻', theme: 'horror' },
-  { id: 'adventure', name: '🗺️ Action/Adventure', description: 'Thrilling expeditions and challenges', icon: '🗺️', theme: 'adventure' }
-];
 
 function App() {
   const { mode, toggleMode, setTheme } = useTheme();
