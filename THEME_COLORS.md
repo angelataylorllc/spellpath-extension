@@ -1,83 +1,147 @@
-# Theme Color System Reference
+# THEME COLORS — Updated Architecture (Dec 2025)
 
-## Color Variable Mapping
+This document explains the active theme system after refactoring.  
+It reflects the current architecture using:
 
-The theme system uses CSS variables that map to specific UI elements. Here's what each color variable controls:
+- `theme-tokens.css`
+- `ThemeContext.jsx`
+- dynamic attributes: `data-mode` (day/night) and `data-theme` (genre)
+- component-level styles in React
 
-### Core Color Variables
+All legacy styling (animated genre backgrounds, `genres.css`, old `--bg` / `--fg` vars, `GenreDemo.jsx`) has been removed.
 
-| Variable | Purpose | Used For |
-|----------|---------|----------|
-| `--color-bg` | **Main Background** | The primary background color of the entire app/screen |
-| `--color-bg-alt` | **Secondary Background** | Alternative background for panels, cards, and secondary surfaces |
-| `--color-surface` | **Surface/Card Background** | Background for cards, input fields, and elevated surfaces |
-| `--color-accent` | **Primary Accent** | Main buttons, primary actions, titles, and key interactive elements |
-| `--color-accent-soft` | **Secondary Accent** | Borders, secondary buttons, hover states, and subtle highlights |
-| `--color-highlight` | **Highlight/Emphasis** | Selection, emphasis, glow effects, and special highlights |
-| `--color-text` | **Primary Text** | Main body text, headings, and primary content |
-| `--color-text-muted` | **Muted Text** | Secondary text, descriptions, and less important content |
+---
 
-### Legacy Variable Mapping (for compatibility)
+## 1. How the Theme System Works
 
-The system also maps to legacy variables used by `genres.css`:
+The root `<html>` element receives two attributes:
 
-| Legacy Variable | Maps To | Used By |
-|----------------|---------|---------|
-| `--bg` | `--color-bg` | `.scene` background |
-| `--fg` | `--color-text` | `.scene` text color |
-| `--accent` | `--color-accent` | Titles, buttons, links |
-| `--link` | `--color-accent-soft` | Links and secondary accents |
-| `--btn-fg` | `--color-bg` (day) or `--color-highlight` (night) | Button text color |
+```html
+<html data-mode="day" data-theme="fantasy">
 
-## Current Usage in Components
+data-mode controls day/night palette.
 
-### App.jsx
-- **Toggle buttons** (🌙/☀️, ⚙️): `--color-accent-soft` background, `--color-accent` border
-- **Genre selection buttons**: 
-  - Selected: `--color-accent-soft` background, `--color-accent` border
-  - Unselected: `--color-bg-alt` background
-- **Primary buttons**: `--color-accent` background, `--color-bg` text
-- **Text**: `--color-text` for primary, `--color-text-muted` for secondary
+data-theme controls the current genre color scheme.
 
-### Settings.jsx
-- **Modal background**: Uses Tailwind classes (could use `--color-bg`)
-- **Labels**: `--color-text`
-- **Toggle container**: `--color-bg-alt` background, `--color-accent-soft` border
-- **Theme buttons**: `--color-accent-soft` when selected, `--color-bg-alt` when not
-- **Done button**: `--color-accent` background, `--color-bg` text
+Every theme/mode pair has its tokens defined in theme-tokens.css.
 
-### genres.css (.scene)
-- **Background**: `--bg` (which maps to `--color-bg`)
-- **Text**: `--fg` (which maps to `--color-text`)
-- **Titles**: `--accent` (which maps to `--color-accent`)
-- **Buttons**: `--accent` background, `--btn-fg` text
+2. Core CSS Variables (Tokens)
 
-## Example: Adventure Theme
+These tokens exist across all themes:
 
-### Day Mode
-```css
---color-bg: #EAD8B1        /* Light beige - main background */
---color-bg-alt: #F2B880   /* Light orange - cards/panels */
---color-surface: #8B5E3C   /* Brown - input fields */
---color-accent: #A63A24    /* Dark red - buttons, titles */
---color-accent-soft: #D38F50 /* Orange - borders, hover */
---color-highlight: #F2B880  /* Light orange - highlights */
-```
+Variable	Purpose
+--color-bg	Main background
+--color-bg-alt	Card/input background
+--color-text	Primary text
+--color-text-muted	De-emphasized text
+--color-accent	Buttons, highlights
+--color-accent-soft	Soft borders, subtle backgrounds
+--color-shadow	Shadow tone
+Note
 
-### Night Mode
-```css
---color-bg: #2C1B10        /* Dark brown - main background */
---color-bg-alt: #5A3825   /* Medium brown - cards/panels */
---color-surface: #5A3825   /* Medium brown - input fields */
---color-accent: #C96A2B    /* Orange - buttons, titles */
---color-accent-soft: #8C3B1C /* Dark red - borders, hover */
---color-highlight: #F0D197  /* Light beige - highlights */
-```
+--color-border exists but is not used by components; most borders derive from --color-accent-soft.
 
-## Recommendations for Better Usage
+3. How Components Use Tokens
+Containers
 
-1. **Background hierarchy**: Use `--color-bg` → `--color-bg-alt` → `--color-surface` for depth
-2. **Interactive elements**: Use `--color-accent` for primary actions, `--color-accent-soft` for secondary
-3. **Text contrast**: Always use `--color-text` for readability (automatically adjusts for day/night)
-4. **Borders**: Use `--color-accent-soft` for subtle borders, `--color-accent` for emphasis
+background-color: var(--color-bg)
 
+border-color: var(--color-accent-soft)
+
+color: var(--color-text)
+
+Buttons
+
+background-color: var(--color-accent)
+
+color: var(--color-bg)
+
+Inputs
+
+background-color: var(--color-bg-alt)
+
+color: var(--color-text)
+
+border-color: var(--color-accent-soft)
+
+Titles / Headers
+
+color: var(--color-text)
+
+4. Day/Night Mode
+
+Each theme defines both day and night tokens:
+
+:root[data-mode="day"][data-theme="fantasy"] { … }
+:root[data-mode="night"][data-theme="fantasy"] { … }
+
+
+Switching mode simply flips the attribute.
+No component-level logic handles day/night.
+
+5. Genre Themes
+
+Each genre ("fantasy", "scifi", "mystery", "adventure", "horror") has two definitions:
+
+Example — Fantasy:
+
+Day
+:root[data-mode="day"][data-theme="fantasy"] {
+  --color-bg: #f4efe6;
+  --color-bg-alt: #fff8ef;
+  --color-text: #2c1e13;
+  --color-accent: #b8864b;
+  --color-accent-soft: #e1c8a3;
+}
+
+Night
+:root[data-mode="night"][data-theme="fantasy"] {
+  --color-bg: #1b140d;
+  --color-bg-alt: #261d14;
+  --color-text: #e7dccf;
+  --color-accent: #d9b86a;
+  --color-accent-soft: #6f5634;
+}
+
+6. Genre Metadata Source
+
+Genre objects come from src/config/genres.js:
+
+{
+  id: "fantasy",
+  name: "🧙‍♂️ Fantasy",
+  icon: "🧙‍♂️",
+  theme: "fantasy",
+  description: "Magical quests and enchanted knowledge"
+}
+
+
+theme must match the CSS data-theme value.
+
+7. Removed Elements
+
+The following no longer exist:
+
+genres.css
+
+.genre-* classes (genre-scifi, etc.)
+
+animated backgrounds
+
+old CSS variables (--bg, --fg, etc.)
+
+typography overrides by genre
+
+GenreDemo.jsx
+
+The theme system now relies purely on token-based theming.
+
+8. Source of Truth
+
+Colors:
+src/styles/theme-tokens.css
+
+Active theme + mode:
+src/contexts/ThemeContext.jsx
+
+These two files fully define all visual styles.

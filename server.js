@@ -88,7 +88,7 @@ app.post('/api/generate', async (req, res) => {
     let parsed;
     try {
       parsed = JSON.parse(content);
-    } catch (err) {
+    } catch  {
       return res.status(500).json({ error: 'Failed to parse model response' });
     }
 

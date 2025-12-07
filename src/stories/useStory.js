@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { StoryEngine } from '../services/storyEngine';
+import { StoryEngine } from './engine';
 
 export const useStory = (storyData) => {
   const [storyEngine] = useState(() => new StoryEngine(storyData));
