@@ -386,12 +386,7 @@ function App() {
   }
 
   // STORY PHASE
-  const storyGenreId = quizData?.genre || selectedGenre;
-
   if (currentPhase === "story" && (quizData || storyData)) {
-    const currentGenre = STORY_GENRES.find(g => g.id === storyGenreId);
-    const storySubject = subject || quizData?.subject || storyData?.subject || '';
-
     return (
       <>
       <main className="scene">
