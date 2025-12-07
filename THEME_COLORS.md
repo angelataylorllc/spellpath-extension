@@ -18,9 +18,7 @@ The root `<html>` element receives two attributes:
 
 ```html
 <html data-mode="day" data-theme="fantasy">
-
 data-mode controls day/night palette.
-
 data-theme controls the current genre color scheme.
 
 Every theme/mode pair has its tokens defined in theme-tokens.css.
@@ -42,30 +40,21 @@ Note
 --color-border exists but is not used by components; most borders derive from --color-accent-soft.
 
 3. How Components Use Tokens
+
 Containers
-
 background-color: var(--color-bg)
-
 border-color: var(--color-accent-soft)
-
 color: var(--color-text)
-
 Buttons
-
 background-color: var(--color-accent)
-
 color: var(--color-bg)
 
 Inputs
-
 background-color: var(--color-bg-alt)
-
 color: var(--color-text)
-
 border-color: var(--color-accent-soft)
 
 Titles / Headers
-
 color: var(--color-text)
 
 4. Day/Night Mode
@@ -82,7 +71,6 @@ No component-level logic handles day/night.
 5. Genre Themes
 
 Each genre ("fantasy", "scifi", "mystery", "adventure", "horror") has two definitions:
-
 Example — Fantasy:
 
 Day
@@ -123,17 +111,11 @@ theme must match the CSS data-theme value.
 The following no longer exist:
 
 genres.css
-
 .genre-* classes (genre-scifi, etc.)
-
 animated backgrounds
-
 old CSS variables (--bg, --fg, etc.)
-
 typography overrides by genre
-
 GenreDemo.jsx
-
 The theme system now relies purely on token-based theming.
 
 8. Source of Truth
