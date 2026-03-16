@@ -1,504 +1,508 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import '../index.css';
 import '../styles/theme-tokens.css';
 import { STORY_GENRES } from '../config/genres';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
-import { generateContent } from '../services/contentApi';
+import Toolbar from './Toolbar';
+import IntakeQuestion from './IntakeQuestion';
+import StoryBeat from '../stories/StoryBeat';
+import { useStory, STORY_PHASES } from '../stories/useStory';
+import { generateIntakeQuestions } from '../services/contentApi';
 
 function App() {
-  const { mode, toggleMode, setTheme } = useTheme();
-  const [subject, setSubject] = useState("");
-  const [selectedGenre, setSelectedGenre] = useState("");
+  const { mode, setTheme } = useTheme();
+  const [subject, setSubject] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Intake quiz state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [currentPhase, setCurrentPhase] = useState("input"); // input, quiz, story
   const [quizData, setQuizData] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
-  const userAnswersRef = useRef(userAnswers);
-  const [showSettings, setShowSettings] = useState(false);
-  const [storyData, setStoryData] = useState(null);
-  const [isGeneratingContent, setIsGeneratingContent] = useState(false);
-  const [generationError, setGenerationError] = useState(null);
-  const STORAGE_KEY = 'spellpath-latest-run';
+  // UI phase: input | quiz | quiz_loading | scaffolding | story | complete
+  const [uiPhase, setUiPhase] = useState('input');
+
+  // Story engine hook
+  const {
+    phase: enginePhase,
+    currentBeatData,
+    beatIndex,
+    totalBeats,
+    storySoFar,
+    isLoading,
+    error,
+    initScaffold,
+    submitCheckpoint,
+    continueStory,
+    reset: resetEngine,
+  } = useStory();
+
+  // Whether the user has answered the current checkpoint (waiting for "Continue")
+  const [checkpointAnswered, setCheckpointAnswered] = useState(false);
+
+  // --- Handlers ---
 
   const handleGenreSelect = (genreId) => {
     setSelectedGenre(genreId);
-    // Also set the theme when a genre is selected
     const genre = STORY_GENRES.find(g => g.id === genreId);
-    if (genre && genre.theme) {
-      setTheme(genre.theme);
-    }
-    // Reset quiz progression when switching genres
+    if (genre?.theme) setTheme(genre.theme);
     setCurrentQuestion(0);
     setUserAnswers([]);
   };
 
+  const UNIVERSAL_QUESTION_COUNT = 3;
+
   const handleSubjectSubmit = (e) => {
     e.preventDefault();
-    if (subject.trim() && selectedGenre) {
-      // Reset state for a fresh quiz run
-      setCurrentQuestion(0);
-      setUserAnswers([]);
-      setQuizData(null);
-      setStoryData(null);
-      setGenerationError(null);
+    if (!subject.trim() || !selectedGenre) return;
 
-      setIsAnalyzing(true);
+    setCurrentQuestion(0);
+    setUserAnswers([]);
+    setIsAnalyzing(true);
 
-      // Simulate AI analysis and quiz generation
-      setTimeout(() => {
-        const generatedQuiz = generateAdaptiveQuiz(subject, selectedGenre);
-        setQuizData(generatedQuiz);
-        setCurrentPhase("quiz");
-        setIsAnalyzing(false);
-      }, 2000);
-    }
+    const quiz = buildUniversalQuiz(subject, selectedGenre);
+    setQuizData(quiz);
+    setUiPhase('quiz');
+    setIsAnalyzing(false);
   };
 
-  const generateAdaptiveQuiz = (subject, genre) => {
-    // Placeholder: will be AI-generated later
-    return {
-      subject: subject,
-      genre: genre,
-      questions: [
-        {
-          id: 1,
-          text: `What's your experience level with ${subject}?`,
-          type: 'difficulty_assessment',
-          choices: [
-            { label: "Complete beginner", value: "beginner", next: 2 },
-            { label: "Some knowledge", value: "intermediate", next: 3 },
-            { label: "Quite experienced", value: "advanced", next: 4 }
-          ]
-        },
-        {
-          id: 2,
-          text: `Let's start with the basics of ${subject}. What do you think this concept means?`,
-          type: 'concept_check',
-          difficulty: 'beginner',
-          choices: [
-            { label: "I'm not sure", value: "unknown", next: 5 },
-            { label: "I have some idea", value: "partial", next: 6 }
-          ]
-        },
-        // More questions will be generated based on previous answers
-      ]
-    };
-  };
+  const buildUniversalQuiz = (subj, genre) => ({
+    subject: subj,
+    genre,
+    questions: [
+      {
+        id: 'u_1',
+        text: 'How old are you?',
+        type: 'text',
+        placeholder: 'e.g., 14, 28, 45...',
+      },
+      {
+        id: 'u_2',
+        text: `What's your experience level with ${subj}?`,
+        type: 'choice',
+        choices: [
+          { label: 'Complete beginner', value: 'beginner' },
+          { label: 'Some knowledge', value: 'intermediate' },
+          { label: 'Quite experienced', value: 'advanced' },
+        ],
+      },
+      {
+        id: 'u_3',
+        text: `Why are you curious about ${subj}?`,
+        type: 'choice',
+        choices: [
+          { label: 'Just curious', value: 'curious' },
+          { label: 'School / coursework', value: 'school' },
+          { label: 'Work / project', value: 'work' },
+          { label: 'Building something specific', value: 'building' },
+          { label: 'Deep personal interest', value: 'passion' },
+        ],
+      },
+    ],
+  });
 
-  const handleQuizAnswer = (answer, questionId) => {
+  const handleQuizAnswer = async (answer, questionId) => {
     const newAnswers = [...userAnswers, { questionId, answer }];
     setUserAnswers(newAnswers);
 
-    const currentQ = quizData.questions.find(q => q.id === questionId);
-    const selectedChoice = currentQ?.choices.find(c => c.value === answer);
+    const nextIndex = currentQuestion + 1;
 
-    const nextQuestionId = selectedChoice?.next;
-    if (!nextQuestionId) {
-      startContentGeneration(newAnswers);
+    // After the last universal question, fetch AI-generated questions
+    if (nextIndex === UNIVERSAL_QUESTION_COUNT && quizData.questions.length === UNIVERSAL_QUESTION_COUNT) {
+      setUiPhase('quiz_loading');
+
+      const age = newAnswers.find(a => a.questionId === 'u_1')?.answer || 'unknown';
+      const level = newAnswers.find(a => a.questionId === 'u_2')?.answer || 'beginner';
+      const motivation = newAnswers.find(a => a.questionId === 'u_3')?.answer || 'curious';
+
+      try {
+        const result = await generateIntakeQuestions({
+          subject,
+          genre: selectedGenre,
+          age,
+          level,
+          motivation,
+        });
+
+        const aiQuestions = result?.questions || [];
+        setQuizData(prev => ({
+          ...prev,
+          questions: [...prev.questions, ...aiQuestions],
+        }));
+        setCurrentQuestion(nextIndex);
+        setUiPhase('quiz');
+      } catch {
+        // If AI questions fail, skip to scaffold with what we have
+        setCurrentQuestion(nextIndex);
+        finishQuiz(newAnswers);
+      }
       return;
     }
 
-    const nextIndex = quizData.questions.findIndex(q => q.id === nextQuestionId);
-    if (nextIndex === -1) {
-      // Fallback: if we don't have a matching question, finish gracefully.
-      setCurrentPhase("story");
+    // More questions to go
+    if (nextIndex < quizData.questions.length) {
+      setCurrentQuestion(nextIndex);
       return;
     }
 
-    setCurrentQuestion(nextIndex);
+    // All questions done — start scaffold
+    finishQuiz(newAnswers);
   };
 
-  const startContentGeneration = async (answersSnapshot = userAnswers) => {
-    setGenerationError(null);
-    setStoryData(null);
-    setIsGeneratingContent(true);
-    setCurrentPhase("story");
+  const finishQuiz = (answers) => {
+    const level = answers.find(a => a.questionId === 'u_2')?.answer || 'beginner';
+    setUiPhase('scaffolding');
+    setCheckpointAnswered(false);
 
-    try {
-      const payload = {
-        subject,
-        genre: selectedGenre,
-        mode,
-        answers: answersSnapshot,
-      };
-      const content = await generateContent(payload);
-      setStoryData(content);
-    } catch (error) {
-      setGenerationError(error?.message || 'Failed to generate content. Please try again.');
-    } finally {
-      setIsGeneratingContent(false);
-    }
-  };
-
-  // Keep ref in sync with userAnswers
-  useEffect(() => {
-    userAnswersRef.current = userAnswers;
-  }, [userAnswers]);
-
-  // Safety: if we ever land on the story phase without data, kick off generation.
-  useEffect(() => {
-    if (currentPhase === "story" && quizData && !storyData && !isGeneratingContent && !generationError) {
-      startContentGeneration(userAnswersRef.current);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPhase, quizData]);
-
-  // Persist last run (story view) in localStorage
-  useEffect(() => {
-    if (!storyData) return;
-    const payload = {
+    initScaffold({
       subject,
-      selectedGenre,
-      storyData,
-      generationError,
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [storyData, generationError, subject, selectedGenre]);
+      genre: selectedGenre,
+      mode,
+      level,
+      answers,
+    }).then(() => {
+      setUiPhase('story');
+    });
+  };
 
-  // Restore last run on load
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved) return;
-    try {
-      const parsed = JSON.parse(saved);
-      if (parsed.subject) setSubject(parsed.subject);
-      if (parsed.selectedGenre) {
-        setSelectedGenre(parsed.selectedGenre);
-        const genre = STORY_GENRES.find(g => g.id === parsed.selectedGenre);
-        if (genre?.theme) setTheme(genre.theme);
-      }
-      if (parsed.storyData) {
-        setStoryData(parsed.storyData);
-        setGenerationError(parsed.generationError || null);
-        setCurrentPhase("story");
-      }
-    } catch {
-      // ignore corrupt data
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const handleCheckpointAnswer = ({ selectedIndex, correct }) => {
+    submitCheckpoint({ selectedIndex, correct });
+    setCheckpointAnswered(true);
+  };
 
+  const handleContinue = async () => {
+    setCheckpointAnswered(false);
+    await continueStory();
+  };
+
+  const handleStartOver = () => {
+    resetEngine();
+    setSubject('');
+    setSelectedGenre('');
+    setQuizData(null);
+    setCurrentQuestion(0);
+    setUserAnswers([]);
+    setCheckpointAnswered(false);
+    setUiPhase('input');
+  };
+
+  // --- Render helpers ---
+
+  const settingsModal = showSettings && <Settings onClose={() => setShowSettings(false)} />;
+
+  const progressBar = totalBeats > 0 && (
+    <div className="w-full rounded-full h-2 overflow-hidden" style={{ backgroundColor: 'var(--color-accent-soft)' }}>
+      <div
+        className="h-2 rounded-full transition-all duration-500"
+        style={{
+          width: `${((beatIndex + (checkpointAnswered ? 1 : 0)) / totalBeats) * 100}%`,
+          backgroundColor: 'var(--color-accent)',
+        }}
+      />
+    </div>
+  );
+
+  // =======================================================================
   // INPUT PHASE
-  if (currentPhase === "input") {
+  // =======================================================================
+  if (uiPhase === 'input') {
     return (
       <>
         <main className="scene">
           <div className="scene__content">
             <div className="mb-6 relative text-center sm:text-left">
-              {/* Day/Night Toggle - Always visible */}
-              <div className="absolute top-0 right-0 flex items-center gap-2">
-                <button
-                  onClick={toggleMode}
-                  className="p-2 rounded-lg transition-all hover:scale-110"
-                  style={{ 
-                    backgroundColor: 'var(--color-accent-soft)',
-                    color: 'var(--color-text)',
-                    border: '2px solid var(--color-accent)'
-                  }}
-                  aria-label={`Switch to ${mode === 'day' ? 'night' : 'day'} mode`}
-                  title={`Switch to ${mode === 'day' ? 'night' : 'day'} mode`}
-                >
-                  {mode === 'day' ? '🌙' : '☀️'}
-                </button>
-                <button
-                  onClick={() => setShowSettings(true)}
-                  className="p-2 rounded-lg transition-all hover:scale-110"
-                  style={{ 
-                    backgroundColor: 'var(--color-accent-soft)',
-                    color: 'var(--color-text)',
-                    border: '2px solid var(--color-accent)'
-                  }}
-                  aria-label="Open settings"
-                  title="Settings"
-                >
-                  ⚙️
-                </button>
-              </div>
-              <h1 className="text-3xl font-bold mb-2 tracking-wide genre-title">StoryPath</h1>
+              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <h1 className="text-3xl font-bold mb-2 tracking-wide genre-title">SpellPath</h1>
               <p className="text-base opacity-80">Choose your learning adventure</p>
             </div>
 
-          <form onSubmit={handleSubjectSubmit} className="space-y-6">
-            <div className="genre-card p-4 rounded-lg border">
-              <label className="block text-sm font-medium mb-3">
-                What would you like to learn?
-              </label>
-              <input
-                type="text"
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder="e.g., quantum physics, medieval cooking, JavaScript..."
-                className="w-full px-4 py-3 genre-input rounded-lg focus:outline-none"
-                disabled={isAnalyzing}
-              />
-            </div>
+            <form onSubmit={handleSubjectSubmit} className="space-y-6">
+              <div className="genre-card p-4 rounded-lg border">
+                <label className="block text-sm font-medium mb-3">
+                  What would you like to learn?
+                </label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  placeholder="e.g., quantum physics, medieval cooking, JavaScript..."
+                  className="w-full px-4 py-3 genre-input rounded-lg focus:outline-none"
+                  disabled={isAnalyzing}
+                />
+              </div>
 
-            <div className="genre-card p-4 rounded-lg border">
-              <label className="block text-sm font-medium mb-3">
-                Choose your story style
-              </label>
-              <div className="grid grid-cols-1 gap-3">
-                {STORY_GENRES.map(genre => (
-                  <button
-                    key={genre.id}
-                    type="button"
-                    onClick={() => handleGenreSelect(genre.id)}
-                    className="p-4 rounded-lg border-2 transition-all duration-300 text-left"
-                    style={{
-                      borderColor: selectedGenre === genre.id 
-                        ? 'var(--color-accent)' 
-                        : 'var(--color-accent-soft)',
-                      backgroundColor: selectedGenre === genre.id 
-                        ? 'var(--color-accent-soft)' 
-                        : 'var(--color-bg-alt)',
-                      boxShadow: selectedGenre === genre.id ? '0 4px 6px rgba(0,0,0,0.1)' : 'none',
-                    }}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <span className="text-2xl">{genre.icon}</span>
-                      <div>
-                        <div className="font-semibold" style={{ color: 'var(--color-text)' }}>
-                          {genre.name}
-                        </div>
-                        <div className="text-sm opacity-80" style={{ color: 'var(--color-text-muted)' }}>
-                          {genre.description}
+              <div className="genre-card p-4 rounded-lg border">
+                <label className="block text-sm font-medium mb-3">
+                  Choose your story style
+                </label>
+                <div className="grid grid-cols-1 gap-3">
+                  {STORY_GENRES.map(genre => (
+                    <button
+                      key={genre.id}
+                      type="button"
+                      onClick={() => handleGenreSelect(genre.id)}
+                      className="p-4 rounded-lg border-2 transition-all duration-300 text-left"
+                      style={{
+                        borderColor: selectedGenre === genre.id
+                          ? 'var(--color-accent)'
+                          : 'var(--color-accent-soft)',
+                        backgroundColor: selectedGenre === genre.id
+                          ? 'var(--color-accent-soft)'
+                          : 'var(--color-bg-alt)',
+                        boxShadow: selectedGenre === genre.id ? '0 4px 6px rgba(0,0,0,0.1)' : 'none',
+                      }}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <span className="text-2xl">{genre.icon}</span>
+                        <div>
+                          <div className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                            {genre.name}
+                          </div>
+                          <div className="text-sm opacity-80" style={{ color: 'var(--color-text-muted)' }}>
+                            {genre.description}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={!subject.trim() || !selectedGenre || isAnalyzing}
-              className="w-full genre-button px-6 py-3 rounded-lg text-base font-medium"
-              style={{
-                backgroundColor: 'var(--color-accent)',
-                color: 'var(--color-bg)',
-                opacity: (!subject.trim() || !selectedGenre || isAnalyzing) ? 0.5 : 1,
-                cursor: (!subject.trim() || !selectedGenre || isAnalyzing) ? 'not-allowed' : 'pointer',
-              }}
-            >
-              {isAnalyzing ? "Analyzing topic and creating quiz..." : "Begin Your Adventure"}
-            </button>
-          </form>
-        </div>
-      </main>
-      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+              <button
+                type="submit"
+                disabled={!subject.trim() || !selectedGenre || isAnalyzing}
+                className="w-full genre-button px-6 py-3 rounded-lg text-base font-medium"
+                style={{
+                  backgroundColor: 'var(--color-accent)',
+                  color: 'var(--color-bg)',
+                  opacity: (!subject.trim() || !selectedGenre || isAnalyzing) ? 0.5 : 1,
+                  cursor: (!subject.trim() || !selectedGenre || isAnalyzing) ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isAnalyzing ? 'Preparing your quiz...' : 'Begin Your Adventure'}
+              </button>
+            </form>
+          </div>
+        </main>
+        {settingsModal}
       </>
     );
   }
 
-  // QUIZ PHASE
-  if (currentPhase === "quiz" && quizData) {
+  // =======================================================================
+  // QUIZ LOADING (fetching AI-generated questions)
+  // =======================================================================
+  if (uiPhase === 'quiz_loading') {
+    return (
+      <>
+        <main className="scene">
+          <div className="scene__content">
+            <div className="mb-6 relative text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+            </div>
+            <div className="genre-card p-8 rounded-lg text-center space-y-4">
+              <h2 className="text-2xl font-bold genre-title">Tailoring Your Quiz</h2>
+              <p className="text-base opacity-80">
+                Creating questions specific to <span className="font-medium">{subject}</span>...
+              </p>
+            </div>
+          </div>
+        </main>
+        {settingsModal}
+      </>
+    );
+  }
+
+  // =======================================================================
+  // QUIZ PHASE (intake)
+  // =======================================================================
+  if (uiPhase === 'quiz' && quizData) {
     const question = quizData.questions[currentQuestion];
     const currentGenre = STORY_GENRES.find(g => g.id === quizData.genre);
 
     return (
       <>
-      <main className="scene">
-        <div className="scene__content">
-          <div className="mb-6 relative text-center sm:text-left">
-            {/* Day/Night Toggle and Settings */}
-            <div className="absolute top-0 right-0 flex items-center gap-2">
+        <main className="scene">
+          <div className="scene__content">
+            <div className="mb-6 relative text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} />
               <button
-                onClick={toggleMode}
-                className="p-2 rounded-lg transition-all hover:scale-110"
-                style={{ 
-                  backgroundColor: 'var(--color-accent-soft)',
-                  color: 'var(--color-text)',
-                  border: '2px solid var(--color-accent)'
-                }}
-                aria-label={`Switch to ${mode === 'day' ? 'night' : 'day'} mode`}
-                title={`Switch to ${mode === 'day' ? 'night' : 'day'} mode`}
+                onClick={() => setUiPhase('input')}
+                className="text-sm mb-3 flex items-center space-x-1 opacity-90 hover:opacity-100"
+                style={{ color: 'var(--color-text)' }}
               >
-                {mode === 'day' ? '🌙' : '☀️'}
+                <span>←</span>
+                <span>Choose different topic</span>
               </button>
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg transition-all hover:scale-110"
-                style={{ 
-                  backgroundColor: 'var(--color-accent-soft)',
-                  color: 'var(--color-text)',
-                  border: '2px solid var(--color-accent)'
-                }}
-                aria-label="Open settings"
-                title="Settings"
-              >
-                ⚙️
-              </button>
+              <div className="genre-card p-3 rounded-lg">
+                <p className="text-xs opacity-80">
+                  Learning: <span className="font-medium">{quizData.subject}</span> |{' '}
+                  Style: <span className="font-medium">{currentGenre?.name}</span>
+                </p>
+              </div>
             </div>
-            <button
-              onClick={() => setCurrentPhase("input")}
-              className="text-sm mb-3 flex items-center space-x-1 opacity-90 hover:opacity-100"
-              style={{ color: 'var(--color-text)' }}
-            >
-              <span>←</span>
-              <span>Choose different topic</span>
-            </button>
-            <div className="genre-card p-3 rounded-lg">
-              <p className="text-xs opacity-80">
-                Learning: <span className="font-medium">{quizData.subject}</span> |{" "}
-                Style: <span className="font-medium">{currentGenre?.name}</span>
+
+            <div className="genre-card p-6 rounded-lg mb-6">
+              <p className="text-sm opacity-80 mb-3">
+                Question {currentQuestion + 1} of {quizData.questions.length}
               </p>
+              <IntakeQuestion
+                key={question.id}
+                question={question}
+                onAnswer={handleQuizAnswer}
+              />
             </div>
           </div>
-
-          <div className="genre-card p-6 rounded-lg mb-6">
-            <p className="text-sm opacity-80 mb-3">
-              Question {currentQuestion + 1} of {quizData.questions.length}
-            </p>
-            <p className="text-lg font-medium mb-6">{question.text}</p>
-
-            <div className="flex flex-col gap-3">
-              {question.choices.map((choice, i) => (
-                <button
-                  key={i}
-                  onClick={() => handleQuizAnswer(choice.value, question.id)}
-                  className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300"
-                  style={{
-                    backgroundColor: 'var(--color-accent)',
-                    color: 'var(--color-bg)',
-                  }}
-                >
-                  {choice.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </main>
-      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+        </main>
+        {settingsModal}
       </>
     );
   }
 
-  // STORY PHASE
-  if (currentPhase === "story" && (quizData || storyData)) {
+  // =======================================================================
+  // SCAFFOLDING PHASE (loading)
+  // =======================================================================
+  if (uiPhase === 'scaffolding') {
     return (
       <>
-      <main className="scene">
-        <div className="scene__content">
-          <div className="mb-6 relative text-center sm:text-left">
-            {/* Day/Night Toggle and Settings */}
-            <div className="absolute top-0 right-0 flex items-center gap-2">
+        <main className="scene">
+          <div className="scene__content">
+            <div className="mb-6 relative text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+            </div>
+            <div className="genre-card p-8 rounded-lg text-center space-y-4">
+              <h2 className="text-2xl font-bold genre-title">Building Your Path</h2>
+              <p className="text-base opacity-80">
+                Crafting a personalized learning journey for <span className="font-medium">{subject}</span>...
+              </p>
+            </div>
+          </div>
+        </main>
+        {settingsModal}
+      </>
+    );
+  }
+
+  // =======================================================================
+  // COMPLETE PHASE (checked before story so engine-driven completion works)
+  // =======================================================================
+  if (uiPhase === 'complete' || enginePhase === STORY_PHASES.COMPLETE) {
+    return (
+      <>
+        <main className="scene">
+          <div className="scene__content">
+            <div className="mb-6 relative text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+            </div>
+
+            <div className="genre-card p-6 rounded-lg text-center space-y-4">
+              <h2 className="text-2xl font-bold genre-title">Journey Complete!</h2>
+              <p className="text-base opacity-80">
+                You explored <span className="font-medium">{subject}</span> across {storySoFar.length} beats.
+              </p>
+
+              {storySoFar.length > 0 && (
+                <div className="text-left space-y-2">
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-accent)' }}>Recap</p>
+                  <ul className="space-y-1 text-sm opacity-80">
+                    {storySoFar.map((beat, i) => (
+                      <li key={i}>
+                        <span className="font-medium">{beat.beatTitle}:</span> {beat.summary}{' '}
+                        {beat.correct ? '✓' : '✗'}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
               <button
-                onClick={toggleMode}
-                className="p-2 rounded-lg transition-all hover:scale-110"
-                style={{ 
-                  backgroundColor: 'var(--color-accent-soft)',
-                  color: 'var(--color-text)',
-                  border: '2px solid var(--color-accent)'
+                onClick={handleStartOver}
+                className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium"
+                style={{
+                  backgroundColor: 'var(--color-accent)',
+                  color: 'var(--btn-fg, var(--color-bg))',
                 }}
-                aria-label={`Switch to ${mode === 'day' ? 'night' : 'day'} mode`}
-                title={`Switch to ${mode === 'day' ? 'night' : 'day'} mode`}
               >
-                {mode === 'day' ? '🌙' : '☀️'}
-              </button>
-              <button
-                onClick={() => setShowSettings(true)}
-                className="p-2 rounded-lg transition-all hover:scale-110"
-                style={{ 
-                  backgroundColor: 'var(--color-accent-soft)',
-                  color: 'var(--color-text)',
-                  border: '2px solid var(--color-accent)'
-                }}
-                aria-label="Open settings"
-                title="Settings"
-              >
-                ⚙️
+                Start New Adventure
               </button>
             </div>
           </div>
+        </main>
+        {settingsModal}
+      </>
+    );
+  }
 
-          <div className="genre-card p-6 rounded-lg mb-6 text-left space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <h2 className="text-2xl font-bold genre-title">Your Story Begins!</h2>
-              {storyData && (
+  // =======================================================================
+  // STORY PHASE (beat by beat)
+  // =======================================================================
+  if (uiPhase === 'story') {
+    return (
+      <>
+        <main className="scene">
+          <div className="scene__content">
+            <div className="mb-6 relative text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <h2 className="text-2xl font-bold genre-title mb-2">Your Story</h2>
+              <div className="flex items-center gap-3 mb-1">
+                <p className="text-xs opacity-80">
+                  Beat {beatIndex + 1} of {totalBeats}
+                </p>
+              </div>
+              {progressBar}
+            </div>
+
+            {error && (
+              <div className="genre-card p-4 rounded-lg mb-4 space-y-3">
+                <p className="text-sm" style={{ color: 'var(--color-accent)' }}>{error}</p>
+              </div>
+            )}
+
+            <StoryBeat
+              key={beatIndex}
+              narrative={currentBeatData?.narrative}
+              checkpoint={currentBeatData?.checkpoint}
+              onAnswer={handleCheckpointAnswer}
+              isLoading={isLoading}
+            />
+
+            {checkpointAnswered && (
+              <div className="mt-4">
                 <button
-                  onClick={() => startContentGeneration()}
-                  className="px-3 py-2 rounded-lg text-xs font-semibold transition-all"
+                  onClick={handleContinue}
+                  disabled={isLoading}
+                  className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium"
                   style={{
                     backgroundColor: 'var(--color-accent)',
-                    color: 'var(--color-bg)',
-                    border: '1px solid var(--color-accent)',
+                    color: 'var(--btn-fg, var(--color-bg))',
+                    opacity: isLoading ? 0.5 : 1,
                   }}
                 >
-                  Regenerate
-                </button>
-              )}
-            </div>
-
-            {isGeneratingContent && (
-              <p className="text-base opacity-80">Building your tailored path...</p>
-            )}
-
-            {generationError && (
-              <div className="space-y-3">
-                <p className="text-sm text-red-200">{generationError}</p>
-                <button
-                  onClick={() => startContentGeneration()}
-                  className="genre-button px-4 py-2 rounded-lg text-sm font-medium"
-                  style={{ backgroundColor: 'var(--color-accent)', color: 'var(--color-bg)' }}
-                >
-                  Retry
+                  {isLoading ? 'Loading next beat...' : (beatIndex + 1 >= totalBeats ? 'Finish Journey' : 'Continue')}
                 </button>
               </div>
             )}
 
-            {storyData && !isGeneratingContent && !generationError && (
-              <div className="space-y-4">
-                <p className="text-base">{storyData.overview}</p>
-                <div className="space-y-3">
-                  {storyData.sections?.map((section, idx) => (
-                    <div key={idx} className="p-4 rounded-lg border" style={{ borderColor: 'var(--color-accent-soft)' }}>
-                      <h3 className="text-lg font-semibold genre-title mb-2">{section.title}</h3>
-                      <p className="text-sm mb-3">{section.body}</p>
-                      {section.quiz && (
-                        <div className="space-y-2">
-                          <p className="text-sm font-medium">Checkpoint:</p>
-                          <p className="text-sm">{section.quiz.question}</p>
-                          <ul className="text-sm list-disc list-inside space-y-1 opacity-80">
-                            {section.quiz.options?.map((opt, i) => (
-                              <li key={i}>{opt}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
+            {storySoFar.length > 0 && (
+              <details className="mt-6 genre-card p-4 rounded-lg">
+                <summary className="text-xs font-medium cursor-pointer opacity-80">
+                  Story so far ({storySoFar.length} beat{storySoFar.length !== 1 ? 's' : ''})
+                </summary>
+                <ul className="mt-2 space-y-1 text-xs opacity-70">
+                  {storySoFar.map((beat, i) => (
+                    <li key={i}>
+                      <span className="font-medium">{beat.beatTitle}:</span> {beat.summary}{' '}
+                      {beat.correct ? '✓' : '✗'}
+                    </li>
                   ))}
-                </div>
-                <p className="text-sm opacity-80">{storyData.summary}</p>
-                <button
-                  onClick={() => {
-                    setCurrentPhase("input");
-                    setCurrentQuestion(0);
-                    setUserAnswers([]);
-                    setQuizData(null);
-                    setSubject("");
-                    setSelectedGenre("");
-                    setStoryData(null);
-                    setGenerationError(null);
-                  }}
-                  className="px-4 py-2 rounded-lg text-sm font-medium"
-                  style={{
-                    backgroundColor: 'var(--color-bg-alt)',
-                    color: 'var(--color-text)',
-                    border: '1px solid var(--color-accent-soft)',
-                  }}
-                >
-                  Start New Adventure
-                </button>
-              </div>
+                </ul>
+              </details>
             )}
           </div>
-        </div>
-      </main>
-      {showSettings && <Settings onClose={() => setShowSettings(false)} />}
+        </main>
+        {settingsModal}
       </>
     );
   }
