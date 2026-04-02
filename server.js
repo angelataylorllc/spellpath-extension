@@ -1,15 +1,16 @@
 import express from 'express';
-import OpenAI from 'openai';
 import dotenv from 'dotenv';
+import { resolveOpenAIForRequest, SPELLPATH_BYOK_HEADER } from './server/lib/aiProvider.js';
+import { recordOpenAIUsage } from './server/lib/usageMeter.js';
+
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 4000;
 
-const openaiApiKey = process.env.OPENAI_API_KEY;
-console.log('OPENAI key present:', !!openaiApiKey);
-
-const openai = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
+const platformKeyPresent = !!String(process.env.OPENAI_API_KEY || '').trim();
+console.log('Platform OPENAI_API_KEY present:', platformKeyPresent);
+console.log('BYOK header allowed:', process.env.SPELLPATH_ALLOW_BYOK !== 'false');
 
 app.use(express.json());
 
@@ -17,7 +18,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept'
+    `Origin, X-Requested-With, Content-Type, Accept, ${SPELLPATH_BYOK_HEADER}`
   );
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
@@ -43,8 +44,8 @@ Return ONLY JSON matching this schema:
       "id": "beat_1",
       "title": "short title (<=6 words)",
       "concept": "the single key idea this beat teaches",
-      "narrativeHint": "1-sentence story direction for this beat",
-      "checkpointFocus": "what to test the learner on",
+      "narrativeHint": "1-sentence scene direction (place, mood, what the learner sees — not a lesson summary)",
+      "checkpointFocus": "what the learner must infer (conceptual), in plain language for you only",
       "flexibility": "rigid | soft | skippable"
     }
   ],
@@ -55,26 +56,29 @@ Return ONLY JSON matching this schema:
 Rules:
 - 3–6 beats depending on subject complexity and level.
 - Each beat covers ONE concept. Do not bundle multiple ideas.
-- Narrative hints should reference the genre world without writing full prose.
+- narrativeHint must read like a choose-your-own-adventure beat setup (where we are, what’s at stake),
+  using genre imagery. Do not write teaching prose or define terms here.
+- checkpointFocus is for planning only — it should name the idea to test, not the story wording.
 - Mark foundational beats as "rigid", enrichment beats as "soft", tangential beats as "skippable".
 - The first beat should hook the learner, the last should synthesize.
 - Keep the scaffold concise — no full explanations, no prose.`.trim();
 
 const beatSystemPrompt = `
-You are SpellPath, a story-driven educator delivering ONE learning beat at a time.
+You are SpellPath, writing ONE beat of an interactive story that secretly teaches one concept.
 
-You receive:
-- The scaffold (full journey outline)
-- The current beat to deliver (concept, narrative hint, checkpoint focus)
-- The learner profile (level, confirmed understandings, misconceptions)
-- A summary of previous beats (story so far)
-- Genre and mode for stylistic tone
+You receive (JSON user payload):
+- scaffold, currentBeat (concept, narrativeHint, checkpointFocus), learnerProfile, storySoFar
+- genre, mode
+- beatIndex (0-based index of this beat in the journey) and totalBeats
+- previousNarrativeOpening (optional): first paragraph of the LAST beat’s narrative — used only to avoid repetition
+
+Tone: choose-your-own-adventure / fiction-first. Build a scene with dialogue and momentum before any “lesson” feeling.
 
 Return ONLY JSON matching this schema:
 {
-  "narrative": "2-4 paragraphs of story-driven explanation (use genre imagery, teach the concept, stay in character)",
+  "narrative": "string — see FORMAT below",
   "checkpoint": {
-    "question": "string — tests the checkpointFocus",
+    "question": "string — short, in-world; see CHECKPOINT below",
     "options": [
       { "label": "string", "correct": true|false },
       { "label": "string", "correct": true|false },
@@ -82,9 +86,29 @@ Return ONLY JSON matching this schema:
     ],
     "hint": "optional — a nudge if they struggle, not a spoiler"
   },
-  "beatSummary": "1-sentence recap of what this beat covered (stored for continuity)",
+  "beatSummary": "1 plain sentence for continuity (may name the concept — not shown as story text)",
   "scaffoldAdjustment": null
 }
+
+FORMAT for "narrative" (critical):
+- Use EXACTLY four or five paragraphs, separated only by \\n\\n (double newline) between paragraphs.
+- Target length: 250–400 words total. No bullet lists. No “In this section we will…”
+- Dialogue (required): include at least FIVE short spoken lines in double quotes, distributed across the beat
+  (e.g. "Like this."). Lines can be one sentence or a clause; avoid long speeches.
+- Paragraph 1: Open with a NEW concrete hook — vary the sensory channel (sound, smell, touch, motion, temperature).
+  Do NOT reuse the same opening image or sentence pattern as previousNarrativeOpening when it is provided
+  (e.g. do not repeat “moon + market + silence + stalls” if that text appeared before).
+- Paragraphs 2–4: Escalate the scene — character interaction, conflict, stakes, world detail. Let the concept
+  surface through events, trade-offs, and dialogue subtext — not a lecture.
+- Paragraph 5 (or end of 4 if tight): Land the moment that makes the checkpoint inevitable — still in scene.
+- If beatIndex is 0: you may establish setting. If beatIndex > 0: treat storySoFar as continuity — advance time or
+  situation; do not restart with a fresh generic establishing shot that ignores what already happened.
+- Do not put the checkpoint question text inside the narrative.
+
+CHECKPOINT (after the story is built):
+- "question": ONE short sentence (18 words max), in-world, sounding like a dilemma or choice — not a textbook.
+- Options: three short labels (each ≤ 10 words). Exactly one correct. Plausible wrong answers in-story.
+- The checkpoint still tests checkpointFocus, but only through story language.
 
 scaffoldAdjustment may be one of:
 - null (no change needed)
@@ -96,14 +120,10 @@ Only suggest scaffoldAdjustment when the learner's misconceptions or confirmed
 understandings clearly warrant a detour or skip. Do not adjust casually.
 
 Rules:
-- Teach exactly ONE concept per beat (from the current beat's "concept" field).
-- The narrative must weave the concept into the genre's story world.
-- If the learner has misconceptions, address them through the narrative — the story
-  itself should embody the correction (a cracked wall that gets repaired, a spell
-  with an unstable ingredient, etc.).
-- The checkpoint must test conceptual grasp, not trivia recall.
+- Teach exactly ONE concept per beat (from currentBeat.concept), through story, not outline.
+- If the learner has misconceptions, show the correction as a story event or image — not a correction paragraph.
 - Exactly one option must have "correct": true.
-- Keep the narrative under 250 words.`.trim();
+- beatSummary is internal metadata: clear and factual (may use the subject name).`.trim();
 
 const intakeSystemPrompt = `
 You are SpellPath, an educator preparing to build a personalized learning journey.
@@ -169,20 +189,32 @@ Tone and imagery should match the genre and mode (day/night). Keep content safe 
 // Helper
 // ---------------------------------------------------------------------------
 
-async function callOpenAI({ systemPrompt, userPayload, maxTokens, temperature }) {
-  if (!openai) {
-    throw Object.assign(new Error('OPENAI_API_KEY is not set on the server.'), { status: 500 });
+async function callOpenAI(req, route, { systemPrompt, userPayload, maxTokens, temperature }) {
+  const { client, billingSource, error } = resolveOpenAIForRequest(req);
+  if (!client || !billingSource) {
+    throw Object.assign(new Error(error || 'OpenAI is not configured.'), { status: 500 });
   }
 
-  const completion = await openai.chat.completions.create({
+  const userJson = JSON.stringify(userPayload);
+
+  const completion = await client.chat.completions.create({
     model: 'gpt-4o-mini',
     response_format: { type: 'json_object' },
     temperature,
     max_tokens: maxTokens,
     messages: [
       { role: 'system', content: systemPrompt },
-      { role: 'user', content: JSON.stringify(userPayload) },
+      { role: 'user', content: userJson },
     ],
+  });
+
+  const usage = completion.usage || {};
+  recordOpenAIUsage({
+    route,
+    billingSource,
+    promptTokens: usage.prompt_tokens,
+    completionTokens: usage.completion_tokens,
+    totalTokens: usage.total_tokens,
   });
 
   const raw = completion.choices[0]?.message?.content;
@@ -206,7 +238,7 @@ app.post('/api/intake', async (req, res) => {
       return res.status(400).json({ error: 'Missing required field: subject' });
     }
 
-    const parsed = await callOpenAI({
+    const parsed = await callOpenAI(req, 'intake', {
       systemPrompt: intakeSystemPrompt,
       userPayload: {
         subject,
@@ -237,7 +269,7 @@ app.post('/api/scaffold', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: subject, genre, mode' });
     }
 
-    const parsed = await callOpenAI({
+    const parsed = await callOpenAI(req, 'scaffold', {
       systemPrompt: scaffoldSystemPrompt,
       userPayload: { subject, genre, mode, level: level || 'beginner', answers: answers || [] },
       maxTokens: 500,
@@ -257,12 +289,22 @@ app.post('/api/scaffold', async (req, res) => {
 
 app.post('/api/beat', async (req, res) => {
   try {
-    const { scaffold, currentBeat, learnerProfile, storySoFar, genre, mode } = req.body || {};
+    const {
+      scaffold,
+      currentBeat,
+      learnerProfile,
+      storySoFar,
+      genre,
+      mode,
+      beatIndex,
+      totalBeats,
+      previousNarrativeOpening,
+    } = req.body || {};
     if (!scaffold || !currentBeat) {
       return res.status(400).json({ error: 'Missing required fields: scaffold, currentBeat' });
     }
 
-    const parsed = await callOpenAI({
+    const parsed = await callOpenAI(req, 'beat', {
       systemPrompt: beatSystemPrompt,
       userPayload: {
         scaffold,
@@ -271,9 +313,15 @@ app.post('/api/beat', async (req, res) => {
         storySoFar: storySoFar || [],
         genre: genre || scaffold.theme?.genre,
         mode: mode || scaffold.theme?.mode,
+        beatIndex: Number.isFinite(beatIndex) ? beatIndex : 0,
+        totalBeats: Number.isFinite(totalBeats) ? totalBeats : scaffold?.beats?.length ?? 0,
+        previousNarrativeOpening:
+          typeof previousNarrativeOpening === 'string' && previousNarrativeOpening.trim()
+            ? previousNarrativeOpening.trim().slice(0, 600)
+            : null,
       },
-      maxTokens: 700,
-      temperature: 0.7,
+      maxTokens: 1200,
+      temperature: 0.78,
     });
 
     return res.json(parsed);
@@ -299,7 +347,7 @@ app.post('/api/generate', async (req, res) => {
       answers?.[0]?.answer ||
       'beginner';
 
-    const parsed = await callOpenAI({
+    const parsed = await callOpenAI(req, 'generate', {
       systemPrompt: legacySystemPrompt,
       userPayload: { subject, genre, mode, level, answers: answers || [] },
       maxTokens: 500,
@@ -315,7 +363,13 @@ app.post('/api/generate', async (req, res) => {
 
 // ---------------------------------------------------------------------------
 
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
+app.get('/api/health', (_req, res) =>
+  res.json({
+    ok: true,
+    platformKeyConfigured: platformKeyPresent,
+    byokAllowed: process.env.SPELLPATH_ALLOW_BYOK !== 'false',
+  })
+);
 
 app.listen(port, () => {
   console.log(`SpellPath API running on http://localhost:${port}`);

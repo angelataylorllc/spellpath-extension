@@ -31,9 +31,18 @@ export default [
     },
   },
   {
-    files: ['server.js'],
+    files: ['server.js', 'server/lib/**/*.js'],
     languageOptions: {
       globals: globals.node,
+    },
+  },
+  {
+    files: ['src/services/apiCredentials.js'],
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.webextensions,
+      },
     },
   },
 ]

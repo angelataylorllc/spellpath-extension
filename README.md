@@ -39,7 +39,10 @@ npm install
 npm run dev          # Start development server with hot reload
 npm run build        # Build extension for production
 npm run preview      # Preview built extension
+npm run api          # Local SpellPath API (OpenAI). Copy `.env.example` → `.env`
 ```
+
+**AI keys & billing shape:** The API supports **platform key** (`OPENAI_API_KEY` in `.env`) and optional **BYOK** via header `X-SpellPath-OpenAI-Key` (extension can store a key in `chrome.storage.local`). See `docs/ai-billing-and-byok.md`.
 
 ### Testing the Extension
 1. Run `npm run build`

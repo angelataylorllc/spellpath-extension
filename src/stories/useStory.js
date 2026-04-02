@@ -4,6 +4,14 @@ import { generateScaffold, generateBeat } from '../services/contentApi';
 
 export { STORY_PHASES };
 
+/** First paragraph of prior beat narrative — sent to API to reduce repeated openings. */
+function extractPreviousNarrativeOpening(narrative) {
+  if (!narrative || typeof narrative !== 'string') return undefined;
+  const first = narrative.trim().split(/\n\n+/)[0] || '';
+  const s = first.trim().slice(0, 480);
+  return s.length ? s : undefined;
+}
+
 export const useStory = () => {
   const engineRef = useRef(new StoryEngine());
   const engine = engineRef.current;
@@ -48,6 +56,9 @@ export const useStory = () => {
         storySoFar: ctx.storySoFar,
         genre,
         mode,
+        beatIndex: ctx.beatIndex,
+        totalBeats: engine.getTotalBeats(),
+        previousNarrativeOpening: undefined,
       });
 
       setCurrentBeatData(beatData);
@@ -77,6 +88,9 @@ export const useStory = () => {
         storySoFar: ctx.storySoFar,
         genre: scaffold.theme?.genre,
         mode: scaffold.theme?.mode,
+        beatIndex: ctx.beatIndex,
+        totalBeats: engine.getTotalBeats(),
+        previousNarrativeOpening: extractPreviousNarrativeOpening(currentBeatData?.narrative),
       });
 
       setCurrentBeatData(beatData);
@@ -87,7 +101,7 @@ export const useStory = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [engine, scaffold, syncState]);
+  }, [engine, scaffold, syncState, currentBeatData]);
 
   // Called when the user answers a checkpoint
   const submitCheckpoint = useCallback(({ selectedIndex, correct }) => {

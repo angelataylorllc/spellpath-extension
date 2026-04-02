@@ -1,6 +1,9 @@
 {
     "manifest_version": 3,
     "name": "Spellpath",
+    "permissions": [
+        "storage"
+    ],
     "description": "A choose-your-adventure learning tool powered by GPT.",
     "version": "0.1",
     "icons": {
