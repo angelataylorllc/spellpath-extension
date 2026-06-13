@@ -4,7 +4,7 @@ const Toolbar = ({ onOpenSettings }) => {
   const { mode, toggleMode } = useTheme();
 
   return (
-    <div className="absolute top-0 right-0 flex items-center gap-2">
+    <div className="scene__toolbar">
       <button
         onClick={toggleMode}
         className="p-2 rounded-lg transition-all hover:scale-110"

@@ -220,7 +220,7 @@ function App() {
         <main className="scene">
           <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content scene__content--intake ui-font">
-            <div className="mb-5 relative text-center sm:text-left">
+            <div className="mb-5 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
               <h1 className="text-[1.6875rem] font-bold mb-1.5 tracking-wide genre-title">SpellPath</h1>
               <p className="ui-subtitle">Choose your learning adventure</p>
@@ -295,9 +295,8 @@ function App() {
         <main className="scene">
           <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content ui-font">
-            <div className="mb-6 relative text-center sm:text-left">
+            <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
-              <div className="scene__toolbar-spacer" aria-hidden="true" />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
               <h2 className="text-2xl font-bold genre-title">Tailoring Your Quiz</h2>
@@ -323,10 +322,9 @@ function App() {
       <>
         <main className="scene">
           <div className="scene__atmosphere" aria-hidden="true" />
-          <div className="scene__content ui-font">
-            <div className="mb-6 relative text-center sm:text-left">
+          <div className="scene__content ui-font scene__content--quiz">
+            <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
-              <div className="scene__toolbar-spacer" aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => setUiPhase('input')}
@@ -369,7 +367,7 @@ function App() {
         <main className="scene">
           <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content ui-font">
-            <div className="mb-6 relative text-center sm:text-left">
+            <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
@@ -394,7 +392,7 @@ function App() {
         <main className="scene">
           <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content ui-font">
-            <div className="mb-6 relative text-center sm:text-left">
+            <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
             </div>
 
@@ -441,7 +439,7 @@ function App() {
         <main className="scene">
           <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content scene__content--story">
-            <div className="mb-6 relative text-center sm:text-left story-chrome">
+            <div className="mb-6 text-center sm:text-left story-chrome">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
               <h2 className="text-2xl font-bold genre-title mb-2">Your Story</h2>
               <div className="flex items-center gap-3 mb-1">
