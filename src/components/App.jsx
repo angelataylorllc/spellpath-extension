@@ -261,13 +261,15 @@ function App() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={!subject.trim() || !selectedGenre || isAnalyzing}
-                className="w-full genre-button ui-btn px-6 py-3 rounded-lg"
-              >
-                {isAnalyzing ? 'Preparing your quiz...' : 'Begin Your Adventure'}
-              </button>
+              <div className="genre-card p-4 rounded-lg border">
+                <button
+                  type="submit"
+                  disabled={!subject.trim() || !selectedGenre || isAnalyzing}
+                  className="w-full genre-button ui-btn px-6 py-3 rounded-lg"
+                >
+                  {isAnalyzing ? 'Preparing your quiz...' : 'Begin Your Adventure'}
+                </button>
+              </div>
             </form>
           </div>
         </main>
