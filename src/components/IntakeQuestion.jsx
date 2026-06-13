@@ -28,17 +28,13 @@ const IntakeQuestion = ({ question, onAnswer }) => {
   if (type === 'choice' && choices) {
     return (
       <div className="space-y-4">
-        <p className="text-lg font-medium">{text}</p>
+        <p className="intake-question">{text}</p>
         <div className="flex flex-col gap-3">
           {choices.map((choice, i) => (
             <button
               key={i}
               onClick={() => onAnswer(choice.value, question.id)}
-              className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300"
-              style={{
-                backgroundColor: 'var(--color-accent)',
-                color: 'var(--color-bg)',
-              }}
+              className="w-full genre-button intake-choice px-4 py-3 rounded-lg transition-all duration-300"
             >
               {choice.label}
             </button>
@@ -52,7 +48,7 @@ const IntakeQuestion = ({ question, onAnswer }) => {
   if (type === 'text') {
     return (
       <div className="space-y-4">
-        <p className="text-lg font-medium">{text}</p>
+        <p className="intake-question">{text}</p>
         <input
           type="text"
           value={inputValue}
@@ -65,13 +61,7 @@ const IntakeQuestion = ({ question, onAnswer }) => {
         <button
           onClick={handleSubmitInput}
           disabled={!inputValue.trim()}
-          className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium"
-          style={{
-            backgroundColor: 'var(--color-accent)',
-            color: 'var(--btn-fg, var(--color-bg))',
-            opacity: !inputValue.trim() ? 0.5 : 1,
-            cursor: !inputValue.trim() ? 'not-allowed' : 'pointer',
-          }}
+          className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
         >
           Continue
         </button>
@@ -83,7 +73,7 @@ const IntakeQuestion = ({ question, onAnswer }) => {
   if (type === 'textarea') {
     return (
       <div className="space-y-4">
-        <p className="text-lg font-medium">{text}</p>
+        <p className="intake-question">{text}</p>
         <textarea
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
@@ -97,24 +87,13 @@ const IntakeQuestion = ({ question, onAnswer }) => {
           <button
             onClick={handleSubmitInput}
             disabled={!inputValue.trim()}
-            className="flex-1 genre-button px-4 py-3 rounded-lg text-sm font-medium"
-            style={{
-              backgroundColor: 'var(--color-accent)',
-              color: 'var(--btn-fg, var(--color-bg))',
-              opacity: !inputValue.trim() ? 0.5 : 1,
-              cursor: !inputValue.trim() ? 'not-allowed' : 'pointer',
-            }}
+            className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg"
           >
             Continue
           </button>
           <button
             onClick={() => onAnswer('', question.id)}
-            className="px-4 py-3 rounded-lg text-sm font-medium"
-            style={{
-              backgroundColor: 'var(--color-bg-alt)',
-              color: 'var(--color-text)',
-              border: '1px solid var(--color-accent-soft)',
-            }}
+            className="ui-btn ui-btn--secondary px-4 py-3 rounded-lg"
           >
             Skip
           </button>
@@ -128,7 +107,7 @@ const IntakeQuestion = ({ question, onAnswer }) => {
     const parts = text.split('___');
     return (
       <div className="space-y-4">
-        <p className="text-lg font-medium leading-relaxed">
+        <p className="intake-question leading-relaxed">
           {parts[0]}
           <input
             type="text"
@@ -149,13 +128,7 @@ const IntakeQuestion = ({ question, onAnswer }) => {
         <button
           onClick={handleSubmitInput}
           disabled={!inputValue.trim()}
-          className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium"
-          style={{
-            backgroundColor: 'var(--color-accent)',
-            color: 'var(--btn-fg, var(--color-bg))',
-            opacity: !inputValue.trim() ? 0.5 : 1,
-            cursor: !inputValue.trim() ? 'not-allowed' : 'pointer',
-          }}
+          className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
         >
           Continue
         </button>
@@ -163,7 +136,7 @@ const IntakeQuestion = ({ question, onAnswer }) => {
     );
   }
 
-  return <p className="text-sm opacity-60">Unknown question type: {type}</p>;
+  return <p className="ui-meta">Unknown question type: {type}</p>;
 };
 
 export default IntakeQuestion;

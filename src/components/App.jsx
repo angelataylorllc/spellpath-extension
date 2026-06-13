@@ -211,16 +211,16 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__content">
+          <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
               <h1 className="text-3xl font-bold mb-2 tracking-wide genre-title">SpellPath</h1>
-              <p className="text-base opacity-80">Choose your learning adventure</p>
+              <p className="ui-subtitle">Choose your learning adventure</p>
             </div>
 
             <form onSubmit={handleSubjectSubmit} className="space-y-6">
               <div className="genre-card p-4 rounded-lg border">
-                <label className="block text-sm font-medium mb-3">
+                <label className="ui-label">
                   What would you like to learn?
                 </label>
                 <input
@@ -234,7 +234,7 @@ function App() {
               </div>
 
               <div className="genre-card p-4 rounded-lg border">
-                <label className="block text-sm font-medium mb-3">
+                <label className="ui-label">
                   Choose your story style
                 </label>
                 <div className="grid grid-cols-1 gap-3">
@@ -243,24 +243,15 @@ function App() {
                       key={genre.id}
                       type="button"
                       onClick={() => handleGenreSelect(genre.id)}
-                      className="p-4 rounded-lg border-2 transition-all duration-300 text-left"
-                      style={{
-                        borderColor: selectedGenre === genre.id
-                          ? 'var(--color-accent)'
-                          : 'var(--color-accent-soft)',
-                        backgroundColor: selectedGenre === genre.id
-                          ? 'var(--color-accent-soft)'
-                          : 'var(--color-bg-alt)',
-                        boxShadow: selectedGenre === genre.id ? '0 4px 6px rgba(0,0,0,0.1)' : 'none',
-                      }}
+                      className={`genre-picker__option${selectedGenre === genre.id ? ' genre-picker__option--selected' : ''}`}
                     >
                       <div className="flex items-center space-x-3">
                         <span className="text-2xl">{genre.icon}</span>
                         <div>
-                          <div className="font-semibold" style={{ color: 'var(--color-text)' }}>
+                          <div className="ui-genre-name">
                             {genre.name}
                           </div>
-                          <div className="text-sm opacity-80" style={{ color: 'var(--color-text-muted)' }}>
+                          <div className="ui-genre-desc">
                             {genre.description}
                           </div>
                         </div>
@@ -273,13 +264,7 @@ function App() {
               <button
                 type="submit"
                 disabled={!subject.trim() || !selectedGenre || isAnalyzing}
-                className="w-full genre-button px-6 py-3 rounded-lg text-base font-medium"
-                style={{
-                  backgroundColor: 'var(--color-accent)',
-                  color: 'var(--color-bg)',
-                  opacity: (!subject.trim() || !selectedGenre || isAnalyzing) ? 0.5 : 1,
-                  cursor: (!subject.trim() || !selectedGenre || isAnalyzing) ? 'not-allowed' : 'pointer',
-                }}
+                className="w-full genre-button ui-btn px-6 py-3 rounded-lg"
               >
                 {isAnalyzing ? 'Preparing your quiz...' : 'Begin Your Adventure'}
               </button>
@@ -298,13 +283,13 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__content">
+          <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
               <h2 className="text-2xl font-bold genre-title">Tailoring Your Quiz</h2>
-              <p className="text-base opacity-80">
+              <p className="ui-subtitle">
                 Creating questions specific to <span className="font-medium">{subject}</span>...
               </p>
             </div>
@@ -325,19 +310,19 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__content">
+          <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
               <button
+                type="button"
                 onClick={() => setUiPhase('input')}
-                className="text-sm mb-3 flex items-center space-x-1 opacity-90 hover:opacity-100"
-                style={{ color: 'var(--color-text)' }}
+                className="ui-link"
               >
                 <span>←</span>
                 <span>Choose different topic</span>
               </button>
               <div className="genre-card p-3 rounded-lg">
-                <p className="text-xs opacity-80">
+                <p className="ui-meta">
                   Learning: <span className="font-medium">{quizData.subject}</span> |{' '}
                   Style: <span className="font-medium">{currentGenre?.name}</span>
                 </p>
@@ -345,7 +330,7 @@ function App() {
             </div>
 
             <div className="genre-card p-6 rounded-lg mb-6">
-              <p className="text-sm opacity-80 mb-3">
+              <p className="ui-meta mb-3">
                 Question {currentQuestion + 1} of {quizData.questions.length}
               </p>
               <IntakeQuestion
@@ -368,13 +353,13 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__content">
+          <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
               <h2 className="text-2xl font-bold genre-title">Building Your Path</h2>
-              <p className="text-base opacity-80">
+              <p className="ui-subtitle">
                 Crafting a personalized learning journey for <span className="font-medium">{subject}</span>...
               </p>
             </div>
@@ -392,14 +377,14 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__content">
+          <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
             </div>
 
             <div className="genre-card p-6 rounded-lg text-center space-y-4">
               <h2 className="text-2xl font-bold genre-title">Journey Complete!</h2>
-              <p className="text-base opacity-80">
+              <p className="ui-subtitle">
                 You explored <span className="font-medium">{subject}</span> across {storySoFar.length} beats.
               </p>
 
@@ -419,11 +404,7 @@ function App() {
 
               <button
                 onClick={handleStartOver}
-                className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium"
-                style={{
-                  backgroundColor: 'var(--color-accent)',
-                  color: 'var(--btn-fg, var(--color-bg))',
-                }}
+                className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
               >
                 Start New Adventure
               </button>
@@ -443,11 +424,11 @@ function App() {
       <>
         <main className="scene">
           <div className="scene__content">
-            <div className="mb-6 relative text-center sm:text-left">
+            <div className="mb-6 relative text-center sm:text-left story-chrome">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
               <h2 className="text-2xl font-bold genre-title mb-2">Your Story</h2>
               <div className="flex items-center gap-3 mb-1">
-                <p className="text-xs opacity-80">
+                <p className="ui-meta">
                   Beat {beatIndex + 1} of {totalBeats}
                 </p>
               </div>
@@ -469,16 +450,11 @@ function App() {
             />
 
             {checkpointAnswered && (
-              <div className="mt-4">
+              <div className="mt-4 story-chrome">
                 <button
                   onClick={handleContinue}
                   disabled={isLoading}
-                  className="w-full genre-button px-4 py-3 rounded-lg text-sm font-medium"
-                  style={{
-                    backgroundColor: 'var(--color-accent)',
-                    color: 'var(--btn-fg, var(--color-bg))',
-                    opacity: isLoading ? 0.5 : 1,
-                  }}
+                  className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
                 >
                   {isLoading ? 'Loading next beat...' : (beatIndex + 1 >= totalBeats ? 'Finish Journey' : 'Continue')}
                 </button>
@@ -486,11 +462,11 @@ function App() {
             )}
 
             {storySoFar.length > 0 && (
-              <details className="mt-6 genre-card p-4 rounded-lg">
-                <summary className="text-xs font-medium cursor-pointer opacity-80">
+              <details className="mt-6 genre-card p-4 rounded-lg story-chrome">
+                <summary className="ui-meta font-medium cursor-pointer">
                   Story so far ({storySoFar.length} beat{storySoFar.length !== 1 ? 's' : ''})
                 </summary>
-                <ul className="mt-2 space-y-1 text-xs opacity-70">
+                <ul className="mt-2 space-y-1 ui-meta">
                   {storySoFar.map((beat, i) => (
                     <li key={i}>
                       <span className="font-medium">{beat.beatTitle}:</span> {beat.summary}{' '}

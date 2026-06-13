@@ -23,6 +23,7 @@
 :root[data-mode="day"] {
   --color-text: #1C1C1C;
   --color-text-muted: #4B4B4B;
+  --btn-fg: #1a1a1a;
   --panel-shadow: 0 14px 32px rgba(0, 0, 0, 0.18);
   --card-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
 }
@@ -30,6 +31,7 @@
 :root[data-mode="night"] {
   --color-text: #F5F5F5;
   --color-text-muted: #C4C4C4;
+  --btn-fg: #f5f5f5;
   --panel-shadow: 0 22px 48px rgba(0, 0, 0, 0.32);
   --card-shadow: 0 14px 32px rgba(0, 0, 0, 0.26);
 }
@@ -52,7 +54,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-bg);
   --font-display: "Bangers", cursive;
   --font-body: "Inter", system-ui, sans-serif;
 }
@@ -70,7 +71,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-highlight);
   --font-display: "Bangers", cursive;
   --font-body: "Inter", system-ui, sans-serif;
 }
@@ -92,7 +92,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-bg);
   --font-display: "Special Elite", monospace;
   --font-body: "Merriweather", serif;
 }
@@ -110,7 +109,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-highlight);
   --font-display: "Special Elite", monospace;
   --font-body: "Merriweather", serif;
 }
@@ -132,7 +130,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-bg);
   --font-display: "Orbitron", sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
 }
@@ -150,7 +147,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-bg);
   --font-display: "Orbitron", sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
 }
@@ -161,36 +157,38 @@
 
 /* Fantasy – Day */
 :root[data-mode="day"][data-theme="fantasy"] {
-  --color-bg: #F6E6D9;
-  --color-bg-alt: #C080A1;
+  --color-bg: #F4EBE0;
+  --color-bg-alt: #FFF8F0;
   --color-surface: #8B6E9C;
-  --color-accent: #A3C6C4;
-  --color-accent-soft: #DAA520;
+  --color-accent: #7A9E9C;
+  --color-accent-soft: #D4A843;
   --color-highlight: #C080A1;
+  --effect-glow: rgba(212, 168, 67, 0.35);
+  --effect-overlay: rgba(244, 235, 224, 0.6);
   
   --bg: var(--color-bg);
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-bg);
   --font-display: "Cinzel", serif;
   --font-body: "Playfair Display", serif;
 }
 
 /* Fantasy – Night */
 :root[data-mode="night"][data-theme="fantasy"] {
-  --color-bg: #2C0454;
-  --color-bg-alt: #214267;
+  --color-bg: #1A0238;
+  --color-bg-alt: #2A1055;
   --color-surface: #214267;
   --color-accent: #9370DB;
   --color-accent-soft: #B4E1E4;
   --color-highlight: #FFD68A;
+  --effect-glow: rgba(147, 112, 219, 0.45);
+  --effect-overlay: rgba(26, 2, 56, 0.5);
   
   --bg: var(--color-bg);
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-bg);
   --font-display: "Cinzel", serif;
   --font-body: "Playfair Display", serif;
 }
@@ -212,7 +210,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-bg);
   --font-display: "Creepster", cursive;
   --font-body: "Spectral SC", serif;
 }
@@ -230,7 +227,6 @@
   --fg: var(--color-text);
   --accent: var(--color-accent);
   --link: var(--color-accent-soft);
-  --btn-fg: var(--color-highlight);
   --font-display: "Creepster", cursive;
   --font-body: "Spectral SC", serif;
 }
@@ -241,12 +237,15 @@
 
 /* Use these in your components */
 .scene {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
   background:
     radial-gradient(1200px 700px at 70% -10%, color-mix(in srgb, var(--color-highlight, var(--color-accent)) 18%, transparent), transparent 60%),
     linear-gradient(180deg, color-mix(in srgb, var(--color-bg) 90%, #000000 10%), var(--color-bg));
   color: var(--color-text);
   font-family: var(--font-body, "Inter", system-ui, sans-serif);
-  transition: background-color .3s ease, color .3s ease;
+  transition: background-color .35s ease, color .35s ease;
 }
 
 .scene h1, .scene h2, .scene h3 {
@@ -279,9 +278,20 @@
 
 .scene .genre-input,
 .scene .genre-select {
-  background-color: color-mix(in srgb, var(--color-surface) 88%, var(--color-bg) 12%);
   border: 1px solid var(--color-accent-soft);
   color: var(--color-text);
+}
+
+/* Day: surface tokens are often dark panel colors — use light bg-alt for readable inputs */
+:root[data-mode="day"] .scene .genre-input,
+:root[data-mode="day"] .scene .genre-select {
+  background-color: color-mix(in srgb, var(--color-bg-alt) 78%, #ffffff 22%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-mode="night"] .scene .genre-input,
+:root[data-mode="night"] .scene .genre-select {
+  background-color: color-mix(in srgb, var(--color-surface) 88%, var(--color-bg) 12%);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
@@ -299,9 +309,16 @@
 }
 
 .scene .genre-button {
-  background: linear-gradient(135deg, color-mix(in srgb, var(--color-accent) 85%, var(--color-highlight) 15%), var(--color-accent));
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size, 17px);
+  font-weight: 600;
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-accent) 85%, var(--color-highlight) 15%),
+    var(--color-accent)
+  );
   border: 1px solid var(--color-accent);
-  color: var(--btn-fg, var(--color-bg));
+  color: var(--btn-fg);
   box-shadow: var(--panel-shadow);
   text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
 }
@@ -340,3 +357,480 @@
 .token-highlight {
   background: var(--color-highlight);
 }
+
+/* ============================================
+   LAYOUT
+   ============================================ */
+
+.scene__content {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+/* ============================================
+   UI FONT — forms, quiz, chrome (uses genre theme fonts)
+   Sizes stay in px; font-family comes from --font-body / --font-display
+   ============================================ */
+
+:root {
+  --font-ui-size: 17px;
+  --font-ui-size-sm: 15px;
+  --font-ui-size-lg: 19px;
+  --font-ui-size-xl: 22px;
+}
+
+.ui-font {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ui-font .genre-title {
+  font-family: var(--font-display, var(--font-body, system-ui, sans-serif));
+}
+
+.ui-font .ui-subtitle {
+  font-size: var(--font-ui-size-xl);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.ui-font .ui-label {
+  display: block;
+  font-size: var(--font-ui-size-xl);
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.ui-font .ui-meta {
+  font-size: var(--font-ui-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.ui-font .ui-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--font-ui-size);
+  color: var(--color-text);
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.ui-font .ui-link:hover {
+  opacity: 1;
+}
+
+.ui-font .ui-genre-name {
+  font-family: var(--font-display, var(--font-body, system-ui, sans-serif));
+  font-size: var(--font-ui-size-xl);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ui-font .ui-genre-desc {
+  font-size: var(--font-ui-size-lg);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  margin-top: 0.2rem;
+}
+
+.ui-font .genre-input,
+.ui-font .genre-input::placeholder {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+}
+
+.ui-font .genre-button,
+.ui-font .ui-btn {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+  font-weight: 500;
+}
+
+.ui-font .ui-btn--secondary {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+  font-weight: 500;
+  background-color: var(--color-bg-alt);
+  color: var(--color-text);
+  border: 1px solid var(--color-accent-soft);
+  cursor: pointer;
+}
+
+.ui-font .intake-question {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size-xl);
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.ui-font .intake-choice {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+}
+
+/* Genre picker on home screen */
+.genre-picker__option {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--color-accent-soft);
+  background: var(--color-bg-alt);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.genre-picker__option:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-accent-soft));
+}
+
+.genre-picker__option--selected {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-bg-alt));
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Per-theme selected tint — accent/bg-alt contrast varies a lot by genre */
+:root[data-theme="scifi"] .genre-picker__option--selected {
+  background: color-mix(in srgb, var(--color-accent) 26%, var(--color-bg-alt));
+}
+
+:root[data-theme="fantasy"] .genre-picker__option--selected {
+  background: color-mix(in srgb, var(--color-accent) 34%, var(--color-bg-alt));
+}
+
+/* Mystery day: accent ≈ bg-alt (both tan) — use darker surface for contrast */
+:root[data-mode="day"][data-theme="mystery"] .genre-picker__option--selected {
+  background: color-mix(in srgb, var(--color-surface) 30%, var(--color-bg-alt));
+  border-color: var(--color-accent-soft);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-accent-soft) 35%, transparent);
+}
+
+/* Mystery night: surface === bg-alt (#5C4631) — surface mix is a no-op; use accent instead */
+:root[data-mode="night"][data-theme="mystery"] .genre-picker__option--selected {
+  background: color-mix(in srgb, var(--color-accent) 32%, var(--color-bg-alt));
+  border-color: var(--color-accent);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--color-accent) 30%, transparent);
+}
+
+.genre-picker__option--selected .ui-genre-name,
+.genre-picker__option--selected .ui-genre-desc {
+  color: var(--color-text);
+}
+
+.story-chrome {
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.story-chrome .ui-meta {
+  font-size: var(--font-ui-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+/* ============================================
+   FANTASY ATMOSPHERE
+   ============================================ */
+
+@keyframes fantasy-nebula-drift {
+  0% { background-position: 0% 0%, 100% 100%, 50% 50%; }
+  100% { background-position: 10% 5%, 90% 95%, 55% 45%; }
+}
+
+@keyframes fantasy-twinkle {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+@keyframes fantasy-card-glow {
+  0% { box-shadow: var(--card-shadow), 0 0 20px color-mix(in srgb, var(--effect-glow) 40%, transparent); }
+  100% { box-shadow: var(--card-shadow), 0 0 36px color-mix(in srgb, var(--effect-glow) 70%, transparent); }
+}
+
+@keyframes fantasy-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes story-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes story-loading-pulse {
+  0%, 100% { transform: scaleX(0.25); opacity: 0.4; }
+  50% { transform: scaleX(1); opacity: 1; }
+}
+
+/* Fantasy day — parchment warmth */
+:root[data-theme="fantasy"][data-mode="day"] .scene {
+  background:
+    radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in srgb, var(--color-highlight) 22%, transparent), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 95% 8%, color-mix(in srgb, var(--color-accent-soft) 18%, transparent), transparent 50%),
+    linear-gradient(175deg, #faf3ea 0%, var(--color-bg) 35%, #ebe0d0 100%);
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 55%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--color-accent-soft) 20%, transparent);
+}
+
+/* Fantasy night — nebula + stars */
+:root[data-theme="fantasy"][data-mode="night"] .scene {
+  background:
+    radial-gradient(ellipse 100% 70% at 50% -15%, color-mix(in srgb, var(--color-accent) 40%, transparent), transparent 58%),
+    radial-gradient(ellipse 55% 45% at 85% 65%, color-mix(in srgb, var(--color-accent-soft) 14%, transparent), transparent),
+    radial-gradient(ellipse 40% 35% at 10% 80%, color-mix(in srgb, var(--color-highlight) 10%, transparent), transparent),
+    linear-gradient(180deg, #120228 0%, var(--color-bg) 45%, #0a0118 100%);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+  animation: fantasy-nebula-drift 28s ease-in-out infinite alternate;
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.85;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1px 1px at 28% 62%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.5px 1.5px at 45% 32%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1px 1px at 62% 78%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.5px 1.5px at 78% 22%, rgba(255, 214, 138, 0.8), transparent),
+    radial-gradient(1px 1px at 88% 55%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(1px 1px at 5% 88%, rgba(180, 225, 228, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 92% 8%, rgba(255, 255, 255, 0.85), transparent);
+  animation: fantasy-twinkle 7s ease-in-out infinite;
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  animation: fantasy-card-glow 5s ease-in-out infinite alternate;
+}
+
+:root[data-theme="fantasy"] .genre-title {
+  text-shadow: 0 0 24px color-mix(in srgb, var(--effect-glow) 50%, transparent);
+}
+
+/* ============================================
+   STORY BEAT COMPONENTS
+   ============================================ */
+
+.story-beat {
+  font-family: var(--font-body, "Playfair Display", serif);
+}
+
+.story-narrative {
+  position: relative;
+  border-left: 3px solid color-mix(in srgb, var(--color-highlight) 70%, var(--color-accent));
+}
+
+:root[data-theme="fantasy"] .story-narrative {
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-bg-alt) 94%, transparent), color-mix(in srgb, var(--color-bg) 88%, transparent));
+}
+
+.story-narrative__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 1.5rem;
+  margin: -0.5rem 0 0;
+}
+
+.story-skip-btn {
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--color-accent-soft) 60%, transparent);
+  color: var(--color-text-muted);
+  font-family: var(--font-body, inherit);
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+}
+
+.story-skip-btn:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+}
+
+.story-paragraph {
+  color: var(--color-text);
+  font-family: var(--font-body, "Playfair Display", serif);
+  font-size: 1.0625rem;
+  line-height: 1.85;
+  letter-spacing: 0.012em;
+  margin: 0;
+}
+
+.story-dialogue {
+  color: var(--color-accent);
+  font-style: italic;
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .story-dialogue {
+  color: var(--color-highlight);
+}
+
+.story-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--color-accent);
+  animation: story-cursor-blink 0.9s step-end infinite;
+}
+
+.story-checkpoint {
+  border-top: 3px solid var(--color-accent);
+  background: color-mix(in srgb, var(--color-surface) 82%, var(--color-bg) 18%);
+  border-left: 1px solid var(--color-accent-soft);
+  border-right: 1px solid var(--color-accent-soft);
+  border-bottom: 1px solid var(--color-accent-soft);
+  max-width: 36rem;
+  margin: 0 auto;
+}
+
+.story-checkpoint__label {
+  font-family: var(--font-display, var(--font-body, system-ui, sans-serif));
+  font-size: var(--font-ui-size-sm);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin: 0;
+  font-weight: 600;
+}
+
+.story-checkpoint__question {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size-lg);
+  line-height: 1.5;
+  font-weight: 500;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.story-checkpoint__options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding-top: 0.25rem;
+}
+
+.story-choice {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--color-accent-soft);
+  background: var(--color-bg-alt);
+  color: var(--color-text);
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+}
+
+.story-choice:hover:not(:disabled) {
+  border-color: var(--color-accent);
+  transform: translateX(2px);
+}
+
+.story-choice--selected {
+  border-color: var(--color-accent);
+  background: color-mix(in srgb, var(--color-accent-soft) 35%, var(--color-bg-alt));
+}
+
+.story-choice--correct {
+  border-color: #22c55e;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.story-choice--wrong {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.story-choice--dim {
+  opacity: 0.45;
+}
+
+.story-choice:disabled {
+  cursor: default;
+}
+
+.story-checkpoint__submit {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+}
+
+.story-checkpoint__hint {
+  font-size: 0.875rem;
+  font-style: italic;
+  color: var(--color-text-muted);
+  margin: 0;
+  padding-top: 0.25rem;
+}
+
+.story-loading__text {
+  font-family: var(--font-body, inherit);
+  font-size: 1rem;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.story-loading__pulse {
+  height: 3px;
+  width: 60%;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-accent),
+    transparent
+  );
+  background-size: 200% 100%;
+  animation: fantasy-shimmer 2s ease-in-out infinite;
+}
+
+/* Reduced motion — disable decorative animation */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="fantasy"][data-mode="night"] .scene,
+  :root[data-theme="fantasy"][data-mode="night"] .scene::before,
+  :root[data-theme="fantasy"][data-mode="night"] .scene .genre-card,
+  .story-cursor,
+  .story-loading__pulse {
+    animation: none !important;
+  }
+
+  .story-cursor {
+    display: none;
+  }
+
+  .genre-button:hover:not(:disabled) {
+    transform: none;
+  }
+}
+

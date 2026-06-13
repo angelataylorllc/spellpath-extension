@@ -39,13 +39,7 @@ export const Settings = ({ onClose }) => {
 
         <button
           onClick={onClose}
-          className="w-full py-2 px-4 rounded-lg font-medium transition-colors"
-          style={{
-            backgroundColor: 'var(--color-accent)',
-            color: 'var(--btn-fg, var(--color-bg))',
-            border: '1px solid var(--color-accent)',
-            boxShadow: 'var(--panel-shadow)',
-          }}
+          className="w-full genre-button ui-btn py-2 px-4 rounded-lg font-medium transition-colors"
         >
           Done
         </button>
