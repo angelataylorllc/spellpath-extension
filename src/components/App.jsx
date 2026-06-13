@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import '../index.css';
 import '../styles/theme-tokens.css';
+import '../styles/adventure-campfire.css';
+import '../styles/adventure-wind.css';
 import { STORY_GENRES } from '../config/genres';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
 import Toolbar from './Toolbar';
+import SceneAtmosphere from './SceneAtmosphere';
 import IntakeQuestion from './IntakeQuestion';
 import StoryBeat from '../stories/StoryBeat';
 import { useStory, STORY_PHASES } from '../stories/useStory';
@@ -218,7 +221,7 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__atmosphere" aria-hidden="true" />
+          <SceneAtmosphere />
           <div className="scene__content scene__content--intake ui-font">
             <div className="mb-4 text-center sm:text-left">
               <Toolbar
@@ -299,7 +302,7 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__atmosphere" aria-hidden="true" />
+          <SceneAtmosphere />
           <div className="scene__content ui-font">
             <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -327,7 +330,7 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__atmosphere" aria-hidden="true" />
+          <SceneAtmosphere />
           <div className="scene__content ui-font scene__content--quiz">
             <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -371,7 +374,7 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__atmosphere" aria-hidden="true" />
+          <SceneAtmosphere />
           <div className="scene__content ui-font">
             <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -396,7 +399,7 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__atmosphere" aria-hidden="true" />
+          <SceneAtmosphere />
           <div className="scene__content ui-font">
             <div className="mb-6 text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -443,7 +446,7 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__atmosphere" aria-hidden="true" />
+          <SceneAtmosphere />
           <div className="scene__content scene__content--story">
             <div className="mb-6 text-center sm:text-left story-chrome">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />

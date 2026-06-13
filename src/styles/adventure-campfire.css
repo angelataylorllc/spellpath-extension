@@ -1,0 +1,238 @@
+/* Kyle Wetton campfire — adapted for Adventure night atmosphere */
+
+@keyframes adventure-campfire-burn {
+  0% {
+    clip-path: polygon(48% 97%, 42% 97%, 37% 93%, 31% 92%, 28% 88%, 26% 81%, 29% 84%, 34% 84%, 33% 79%, 30% 74%, 31% 67%, 34% 57%, 34% 65%, 39% 71%, 43% 65%, 43% 55%, 40% 45%, 48% 59%, 49% 69%, 51% 76%, 55% 71%, 54% 65%, 54% 58%, 58% 64%, 61% 72%, 57% 92%, 61% 97%, 64% 98%, 66% 95%, 64% 93%, 57% 96%, 54% 93%, 48% 97%);
+  }
+  25% {
+    clip-path: polygon(49% 97%, 41% 97%, 35% 92%, 33% 86%, 34% 80%, 30% 74%, 34% 77%, 38% 81%, 38% 78%, 36% 72%, 35% 67%, 37% 61%, 37% 54%, 39% 61%, 39% 67%, 43% 63%, 43% 58%, 45% 44%, 44% 58%, 48% 66%, 51% 67%, 51% 59%, 54% 67%, 56% 72%, 57% 79%, 59% 77%, 60% 71%, 61% 77%, 61% 83%, 60% 89%, 61% 94%, 57% 97%, 52% 98%);
+  }
+  50% {
+    clip-path: polygon(46% 97%, 39% 96%, 35% 89%, 36% 84%, 34% 77%, 30% 73%, 30% 65%, 30% 70%, 35% 75%, 38% 68%, 37% 61%, 40% 53%, 41% 42%, 42% 56%, 44% 65%, 50% 67%, 51% 57%, 53% 68%, 52% 74%, 51% 81%, 55% 78%, 57% 72%, 58% 79%, 57% 85%, 55% 88%, 60% 87%, 63% 82%, 63% 89%, 59% 94%, 55% 98%, 51% 92%, 50% 99%, 45% 96%);
+  }
+  75% {
+    clip-path: polygon(45% 97%, 38% 97%, 33% 93%, 31% 87%, 31% 81%, 29% 76%, 25% 69%, 29% 61%, 30% 69%, 35% 71%, 35% 62%, 34% 54%, 38% 45%, 38% 54%, 43% 62%, 47% 57%, 48% 49%, 44% 38%, 50% 46%, 53% 60%, 54% 71%, 53% 79%, 59% 76%, 60% 66%, 64% 73%, 63% 79%, 59% 85%, 64% 90%, 68% 84%, 68% 92%, 60% 97%, 53% 98%, 48% 99%);
+  }
+  100% {
+    clip-path: polygon(48% 97%, 42% 97%, 37% 93%, 31% 92%, 28% 88%, 26% 81%, 29% 84%, 34% 84%, 33% 79%, 30% 74%, 31% 67%, 34% 57%, 34% 65%, 39% 71%, 43% 65%, 43% 55%, 40% 45%, 48% 59%, 49% 69%, 51% 76%, 55% 71%, 54% 65%, 54% 58%, 58% 64%, 61% 72%, 57% 92%, 61% 97%, 64% 98%, 66% 95%, 64% 93%, 57% 96%, 54% 93%, 48% 97%);
+  }
+}
+
+@keyframes adventure-campfire-burn-alt {
+  0%, 100% {
+    clip-path: polygon(48% 97%, 43% 97%, 38% 97%, 34% 94%, 33% 91%, 32% 87%, 29% 83%, 26% 80%, 21% 75%, 20% 71%, 20% 66%, 20% 59%, 20% 65%, 24% 68%, 28% 67%, 28% 62%, 25% 60%, 21% 52%, 21% 43%, 24% 32%, 23% 39%, 24% 46%, 28% 48%, 33% 44%, 33% 39%, 31% 32%, 28% 23%, 30% 14%, 31% 22%, 35% 28%, 39% 28%, 41% 25%, 40% 21%, 39% 13%, 41% 6%, 42% 15%, 45% 23%, 49% 25%, 52% 22%, 51% 13%, 54% 21%, 56% 29%, 53% 35%, 50% 41%, 53% 46%, 58% 46%, 60% 39%, 60% 34%, 64% 39%, 65% 45%, 63% 51%, 61% 56%, 64% 61%, 68% 59%, 71% 55%, 73% 48%, 73% 40%, 76% 48%, 77% 56%, 76% 62%, 74% 66%, 69% 71%, 71% 74%, 75% 74%, 79% 71%, 81% 65%, 82% 72%, 81% 77%, 77% 82%, 73% 86%, 73% 89%, 78% 89%, 82% 85%, 81% 91%, 78% 95%, 72% 97%, 65% 98%, 59% 98%, 53% 99%, 47% 97%);
+  }
+  33% {
+    clip-path: polygon(38% 100%, 34% 99%, 28% 96%, 25% 93%, 23% 89%, 19% 85%, 18% 79%, 21% 74%, 24% 68%, 24% 62%, 22% 55%, 20% 50%, 24% 53%, 28% 61%, 31% 68%, 36% 68%, 38% 69%, 43% 67%, 41% 59%, 35% 54%, 33% 46%, 35% 39%, 41% 32%, 41% 26%, 38% 17%, 42% 21%, 46% 29%, 46% 39%, 43% 45%, 43% 51%, 47% 55%, 52% 56%, 55% 54%, 55% 49%, 54% 42%, 52% 34%, 59% 43%, 61% 51%, 60% 58%, 58% 63%, 65% 68%, 69% 67%, 72% 63%, 72% 57%, 71% 51%, 76% 39%, 73% 50%, 77% 56%, 81% 55%, 82% 49%, 84% 59%, 79% 69%, 72% 74%, 69% 76%, 71% 81%, 77% 81%, 81% 77%, 84% 70%, 87% 75%, 86% 81%, 84% 84%, 81% 87%, 81% 91%, 79% 94%, 77% 96%, 74% 97%, 71% 95%, 68% 96%, 67% 99%, 63% 100%, 60% 100%, 55% 100%, 53% 100%, 50% 100%, 48% 100%, 46% 100%, 44% 100%, 42% 100%, 41% 100%);
+  }
+  66% {
+    clip-path: polygon(45% 99%, 41% 99%, 35% 98%, 30% 98%, 25% 94%, 22% 89%, 21% 84%, 23% 77%, 23% 70%, 19% 63%, 23% 66%, 27% 71%, 28% 76%, 32% 78%, 35% 72%, 32% 67%, 28% 64%, 24% 58%, 24% 49%, 27% 42%, 30% 34%, 31% 24%, 29% 13%, 33% 18%, 38% 25%, 38% 36%, 37% 44%, 41% 48%, 45% 48%, 48% 45%, 48% 39%, 46% 33%, 48% 27%, 52% 20%, 50% 29%, 51% 38%, 53% 44%, 54% 52%, 56% 57%, 61% 57%, 64% 55%, 65% 48%, 63% 39%, 63% 32%, 66% 37%, 69% 44%, 70% 52%, 68% 59%, 66% 64%, 67% 69%, 73% 72%, 76% 71%, 77% 66%, 76% 58%, 76% 51%, 80% 57%, 82% 62%, 82% 68%, 80% 73%, 77% 78%, 74% 82%, 75% 87%, 78% 87%, 81% 84%, 84% 79%, 86% 74%, 88% 78%, 87% 83%, 84% 89%, 82% 92%, 78% 97%, 74% 97%, 69% 97%, 66% 98%, 61% 98%, 57% 97%, 53% 99%, 49% 96%, 47% 99%);
+  }
+}
+
+@keyframes adventure-smoke-rise {
+  0% {
+    transform: translate(-50%, 0) scale(0.5);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.55;
+  }
+  100% {
+    transform: translate(-50%, -min(360px, 55vh)) scale(2.8);
+    opacity: 0;
+  }
+}
+
+@keyframes adventure-spark-1 {
+  0% { opacity: 1; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(8px, -140px); }
+}
+
+@keyframes adventure-spark-2 {
+  0% { opacity: 1; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(-20px, -180px); }
+}
+
+@keyframes adventure-spark-3 {
+  0% { opacity: 1; transform: translate(0, 0); }
+  100% { opacity: 0; transform: translate(24px, -160px); }
+}
+
+@keyframes adventure-fire-glow {
+  0%, 100% { opacity: 0.72; transform: scale(1, 1); }
+  50% { opacity: 0.95; transform: scale(1.06, 1.08); }
+}
+
+.adventure-campfire {
+  position: absolute;
+  bottom: -16px;
+  left: -28px;
+  width: min(420px, 68vw);
+  height: min(360px, 50vh);
+  pointer-events: none;
+}
+
+.adventure-campfire__light {
+  position: absolute;
+  inset: 8% 0 22%;
+  border-radius: 50% 50% 35% 35%;
+  filter: blur(52px);
+  background: rgba(237, 100, 52, 0.5);
+  z-index: 0;
+  animation: adventure-fire-glow 2.1s ease-in-out infinite alternate;
+}
+
+.adventure-campfire__smoke {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  overflow: visible;
+}
+
+.adventure-campfire__smoke-wisp {
+  position: absolute;
+  bottom: 62%;
+  left: 50%;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(160, 160, 160, 0.42);
+  mix-blend-mode: screen;
+  filter: blur(18px);
+  animation: adventure-smoke-rise 7s ease-out infinite;
+}
+
+.adventure-campfire__smoke-wisp--1 {
+  margin-left: -18px;
+  animation-delay: 0s;
+}
+
+.adventure-campfire__smoke-wisp--2 {
+  margin-left: 12px;
+  width: 56px;
+  height: 56px;
+  animation-delay: 1.4s;
+  animation-duration: 8s;
+}
+
+.adventure-campfire__smoke-wisp--3 {
+  margin-left: -8px;
+  width: 64px;
+  height: 64px;
+  filter: blur(20px);
+  animation-delay: 2.8s;
+  animation-duration: 9s;
+}
+
+.adventure-campfire__smoke-wisp--4 {
+  margin-left: 20px;
+  animation-delay: 4.2s;
+  animation-duration: 7.5s;
+}
+
+.adventure-campfire__smoke-wisp--5 {
+  margin-left: -28px;
+  width: 72px;
+  height: 72px;
+  filter: blur(22px);
+  animation-delay: 5.6s;
+  animation-duration: 10s;
+}
+
+.adventure-campfire__flame {
+  position: absolute;
+  bottom: 14%;
+  left: 50%;
+  transform: translateX(-50%);
+  height: 78%;
+  background: linear-gradient(0deg, #ecdd42 10%, #edae34 15%, #ed6434 50%, #fa4708 59%);
+  filter: blur(1px);
+  z-index: 3;
+}
+
+.adventure-campfire__flame--front {
+  width: 110%;
+  margin-left: 4%;
+  opacity: 0.72;
+  animation: adventure-campfire-burn 1.5s linear infinite;
+}
+
+.adventure-campfire__flame--back {
+  width: 56%;
+  bottom: 16%;
+  opacity: 1;
+  z-index: 2;
+  animation: adventure-campfire-burn-alt 2.5s linear infinite;
+}
+
+.adventure-campfire__log {
+  position: absolute;
+  bottom: 0;
+  width: 18px;
+  height: 88px;
+  border-radius: 10px;
+  transform-origin: bottom center;
+  background: linear-gradient(#8b5e3c, #4a4038);
+  box-shadow: 0 0 3px rgba(0, 0, 0, 0.5);
+  z-index: 1;
+}
+
+.adventure-campfire__log::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 18px;
+  border-radius: 20px;
+  background: #c96a2b;
+  transform-origin: top center;
+  transform: scale(1, 0.5);
+}
+
+.adventure-campfire__log--1 { left: 22%; transform: rotate(42deg); }
+.adventure-campfire__log--2 { left: 32%; transform: rotate(22deg); }
+.adventure-campfire__log--3 { left: 44%; transform: rotate(4deg); }
+.adventure-campfire__log--4 { left: 54%; transform: rotate(-12deg); }
+.adventure-campfire__log--5 { left: 66%; transform: rotate(-32deg); }
+
+.adventure-campfire__spark {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 1px;
+  background: #ffe066;
+  filter: blur(1px);
+  z-index: 5;
+  opacity: 0;
+}
+
+.adventure-campfire__spark--1 {
+  bottom: 52%;
+  left: 46%;
+  animation: adventure-spark-1 1s infinite;
+}
+
+.adventure-campfire__spark--2 {
+  bottom: 50%;
+  left: 54%;
+  animation: adventure-spark-2 1s 0.6s infinite;
+}
+
+.adventure-campfire__spark--3 {
+  bottom: 48%;
+  left: 50%;
+  animation: adventure-spark-3 1s 0.3s infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adventure-campfire__flame,
+  .adventure-campfire__spark,
+  .adventure-campfire__smoke-wisp,
+  .adventure-campfire__light {
+    animation: none !important;
+  }
+
+  .adventure-campfire__smoke-wisp {
+    opacity: 0.25;
+  }
+}
