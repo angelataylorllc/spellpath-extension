@@ -297,6 +297,7 @@ function App() {
           <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <div className="scene__toolbar-spacer" aria-hidden="true" />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
               <h2 className="text-2xl font-bold genre-title">Tailoring Your Quiz</h2>
@@ -325,6 +326,7 @@ function App() {
           <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <div className="scene__toolbar-spacer" aria-hidden="true" />
               <button
                 type="button"
                 onClick={() => setUiPhase('input')}

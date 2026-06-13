@@ -370,6 +370,12 @@
   padding: 2rem 1.25rem 3rem;
 }
 
+/* Reserve vertical space for absolute-positioned toolbar (day/night + settings) */
+.scene__toolbar-spacer {
+  height: 2.75rem;
+  pointer-events: none;
+}
+
 /* Story reading column — ~two-thirds of viewport width */
 .scene__content--story {
   max-width: 66.67vw;
