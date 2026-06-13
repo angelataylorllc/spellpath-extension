@@ -216,7 +216,8 @@
   --color-accent: #8B0000;
   --color-accent-soft: #4A2C2C;
   --color-highlight: #5E5E5E;
-  
+  --effect-glow: rgba(139, 0, 0, 0.32);
+  --effect-overlay: rgba(234, 234, 234, 0.55);
   --bg: var(--color-bg);
   --fg: var(--color-text);
   --accent: var(--color-accent);
@@ -233,7 +234,8 @@
   --color-accent: #8B0000;
   --color-accent-soft: #3C1F1F;
   --color-highlight: #E5E5E5;
-  
+  --effect-glow: rgba(139, 0, 0, 0.48);
+  --effect-overlay: rgba(10, 10, 10, 0.6);
   --bg: var(--color-bg);
   --fg: var(--color-text);
   --accent: var(--color-accent);
@@ -417,7 +419,8 @@
 
 :root[data-theme="fantasy"] .scene__atmosphere,
 :root[data-theme="scifi"] .scene__atmosphere,
-:root[data-theme="mystery"] .scene__atmosphere {
+:root[data-theme="mystery"] .scene__atmosphere,
+:root[data-theme="horror"] .scene__atmosphere {
   display: block;
 }
 
@@ -591,6 +594,75 @@
     var(--card-shadow),
     inset 0 1px 0 rgba(255, 255, 255, 0.4),
     0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+/* Horror day — pale clinical light + dripping blood */
+:root[data-theme="horror"][data-mode="day"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene__atmosphere {
+  background: linear-gradient(180deg, #f6f6f6 0%, var(--color-bg) 42%, #e4e4e4 100%);
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene__atmosphere::before {
+  opacity: 0.93;
+  mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(circle 6px at 9% 0, rgba(139, 0, 0, 0.9), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.78) 0%, rgba(115, 0, 0, 0.52) 78%, rgba(139, 0, 0, 0.18) 96%, transparent 100%),
+    radial-gradient(circle 5px at 27% 0, rgba(120, 0, 0, 0.85), transparent 72%),
+    linear-gradient(180deg, rgba(120, 0, 0, 0.72) 0%, rgba(95, 0, 0, 0.48) 82%, transparent 100%),
+    radial-gradient(circle 6px at 51% 0, rgba(139, 0, 0, 0.92), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.8) 0%, rgba(110, 0, 0, 0.55) 75%, rgba(90, 0, 0, 0.12) 98%, transparent 100%),
+    radial-gradient(circle 5px at 73% 0, rgba(100, 0, 0, 0.82), transparent 72%),
+    linear-gradient(180deg, rgba(100, 0, 0, 0.68) 0%, rgba(85, 0, 0, 0.42) 88%, transparent 100%);
+  background-size:
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%;
+  background-position:
+    0 0, 9% 0,
+    0 0, 27% 0,
+    0 0, 51% 0,
+    0 0, 73% 0;
+  background-repeat: no-repeat;
+  animation: horror-drip-grow-a 20s ease-in infinite;
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene__atmosphere::after {
+  opacity: 0.88;
+  mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(circle 5px at 14% 0, rgba(139, 0, 0, 0.88), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.74) 0%, rgba(110, 0, 0, 0.5) 80%, transparent 100%),
+    radial-gradient(circle 5px at 38% 0, rgba(120, 0, 0, 0.85), transparent 72%),
+    linear-gradient(180deg, rgba(120, 0, 0, 0.7) 0%, rgba(95, 0, 0, 0.46) 82%, transparent 100%),
+    radial-gradient(circle 6px at 62% 0, rgba(139, 0, 0, 0.9), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.76) 0%, rgba(110, 0, 0, 0.52) 78%, rgba(139, 0, 0, 0.16) 96%, transparent 100%),
+    radial-gradient(circle 5px at 86% 0, rgba(100, 0, 0, 0.82), transparent 72%),
+    linear-gradient(180deg, rgba(100, 0, 0, 0.66) 0%, rgba(85, 0, 0, 0.4) 88%, transparent 100%);
+  background-size:
+    100% 100%, 4px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%;
+  background-position:
+    0 0, 14% 0,
+    0 0, 38% 0,
+    0 0, 62% 0,
+    0 0, 86% 0;
+  background-repeat: no-repeat;
+  animation: horror-drip-grow-b 26s ease-in 5s infinite;
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 50%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 15%, transparent);
 }
 
 /* Home / intake screen — slightly tighter than default so content fits without browser zoom */
@@ -1116,6 +1188,328 @@
 }
 
 /* ============================================
+   HORROR ATMOSPHERE
+   ============================================ */
+
+@keyframes horror-drip-grow-a {
+  0%, 4% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  14%, 22% {
+    background-size:
+      100% 100%, 5px 38%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  26%, 34% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 32%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  38%, 46% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 55%,
+      100% 100%, 5px 28%,
+      100% 100%, 4px 0%;
+  }
+  50%, 58% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 55%,
+      100% 100%, 5px 52%,
+      100% 100%, 4px 30%;
+  }
+  62%, 72% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 55%,
+      100% 100%, 5px 52%,
+      100% 100%, 4px 58%;
+  }
+  94%, 100% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+}
+
+@keyframes horror-drip-grow-b {
+  0%, 6% {
+    background-size:
+      100% 100%, 4px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  18%, 26% {
+    background-size:
+      100% 100%, 4px 42%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  30%, 38% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 35%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  42%, 50% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 30%,
+      100% 100%, 4px 0%;
+  }
+  54%, 62% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 58%,
+      100% 100%, 4px 28%;
+  }
+  66%, 76% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 58%,
+      100% 100%, 4px 56%;
+  }
+  96%, 100% {
+    background-size:
+      100% 100%, 4px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+}
+
+@keyframes horror-red-haze-drift {
+  0% {
+    transform: translate(-1.5%, 0.8%);
+    opacity: 0.78;
+  }
+  100% {
+    transform: translate(1.5%, -0.8%);
+    opacity: 0.92;
+  }
+}
+
+@keyframes horror-drip-grow-night {
+  0%, 4% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  10%, 16% {
+    background-size:
+      100% 100%, 5px 35%,
+      100% 100%, 4px 28%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  20%, 28% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 32%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  32%, 40% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  44%, 52% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 50%,
+      100% 100%, 4px 42%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  56%, 64% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 50%,
+      100% 100%, 4px 42%,
+      100% 100%, 5px 38%,
+      100% 100%, 4px 0%;
+  }
+  68%, 76% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 50%,
+      100% 100%, 4px 42%,
+      100% 100%, 5px 60%,
+      100% 100%, 4px 45%;
+  }
+  94%, 100% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+}
+
+/* Horror night — void black + cloudy crimson haze + black blood drips */
+:root[data-theme="horror"][data-mode="night"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="horror"][data-mode="night"] .scene__atmosphere {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 100%, rgba(0, 0, 0, 0.5), transparent 62%),
+    radial-gradient(ellipse 45% 70% at 0% 50%, rgba(0, 0, 0, 0.38), transparent 58%),
+    radial-gradient(ellipse 45% 70% at 100% 50%, rgba(0, 0, 0, 0.38), transparent 58%),
+    linear-gradient(180deg, #060606 0%, var(--color-bg) 42%, #040404 100%);
+}
+
+/* Drifting crimson cloud haze */
+:root[data-theme="horror"][data-mode="night"] .scene__atmosphere::before {
+  mix-blend-mode: screen;
+  filter: blur(20px);
+  background:
+    radial-gradient(ellipse 95% 65% at 26% 28%, rgba(139, 0, 0, 0.42), transparent 72%),
+    radial-gradient(ellipse 88% 72% at 72% 48%, rgba(110, 0, 0, 0.36), transparent 70%),
+    radial-gradient(ellipse 100% 58% at 44% 72%, rgba(120, 0, 0, 0.3), transparent 68%),
+    radial-gradient(ellipse 82% 55% at 14% 58%, rgba(139, 0, 0, 0.26), transparent 66%),
+    radial-gradient(ellipse 78% 62% at 84% 80%, rgba(90, 0, 0, 0.24), transparent 64%),
+    radial-gradient(ellipse 70% 48% at 55% 18%, rgba(160, 20, 20, 0.18), transparent 62%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation: horror-red-haze-drift 42s ease-in-out infinite alternate;
+}
+
+/* Black blood drips — grow from top, same style as day */
+:root[data-theme="horror"][data-mode="night"] .scene__atmosphere::after {
+  opacity: 0.92;
+  mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(circle 6px at 6% 0, rgba(0, 0, 0, 0.96), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(18, 0, 0, 0.68) 78%, rgba(0, 0, 0, 0.22) 96%, transparent 100%),
+    radial-gradient(circle 5px at 19% 0, rgba(0, 0, 0, 0.94), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.86) 0%, rgba(12, 0, 0, 0.62) 82%, transparent 100%),
+    radial-gradient(circle 6px at 32% 0, rgba(0, 0, 0, 0.95), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.88) 0%, rgba(15, 0, 0, 0.64) 75%, rgba(0, 0, 0, 0.14) 98%, transparent 100%),
+    radial-gradient(circle 5px at 45% 0, rgba(0, 0, 0, 0.93), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.84) 0%, rgba(10, 0, 0, 0.58) 85%, transparent 100%),
+    radial-gradient(circle 6px at 58% 0, rgba(0, 0, 0, 0.96), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(16, 0, 0, 0.66) 78%, rgba(0, 0, 0, 0.18) 96%, transparent 100%),
+    radial-gradient(circle 5px at 71% 0, rgba(0, 0, 0, 0.94), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(12, 0, 0, 0.6) 82%, transparent 100%),
+    radial-gradient(circle 6px at 84% 0, rgba(0, 0, 0, 0.95), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.87) 0%, rgba(14, 0, 0, 0.62) 80%, transparent 100%),
+    radial-gradient(circle 5px at 93% 0, rgba(0, 0, 0, 0.92), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.82) 0%, rgba(8, 0, 0, 0.55) 88%, transparent 100%);
+  background-size:
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%;
+  background-position:
+    0 0, 6% 0,
+    0 0, 19% 0,
+    0 0, 32% 0,
+    0 0, 45% 0,
+    0 0, 58% 0,
+    0 0, 71% 0,
+    0 0, 84% 0,
+    0 0, 93% 0;
+  background-repeat: no-repeat;
+  animation: horror-drip-grow-night 28s ease-in infinite;
+}
+
+:root[data-theme="horror"][data-mode="night"] .scene::before {
+  display: none;
+}
+
+:root[data-theme="horror"][data-mode="night"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  animation: fantasy-card-glow 5s ease-in-out infinite alternate;
+}
+
+:root[data-theme="horror"] .genre-title {
+  text-shadow: 0 0 20px color-mix(in srgb, var(--effect-glow) 55%, transparent);
+}
+
+:root[data-theme="horror"] .story-narrative.genre-card {
+  background-color: color-mix(in srgb, var(--genre-card-surface) 18%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bg-alt) 22%, transparent),
+    color-mix(in srgb, var(--color-bg) 12%, transparent)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-theme="horror"] .story-checkpoint {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--genre-card-surface) 45%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme="horror"][data-mode="night"] .story-dialogue {
+  color: color-mix(in srgb, var(--color-accent) 75%, #ffcccc);
+}
+
+:root[data-theme="horror"][data-mode="day"] .story-dialogue {
+  color: var(--color-accent);
+}
+
+/* ============================================
    STORY BEAT COMPONENTS
    ============================================ */
 
@@ -1323,9 +1717,11 @@
   :root[data-theme="scifi"][data-mode="night"] .scene__atmosphere::after,
   :root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::before,
   :root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::after,
+  :root[data-theme="horror"][data-mode="night"] .scene__atmosphere::before,
   :root[data-theme="fantasy"][data-mode="night"] .scene .genre-card,
   :root[data-theme="scifi"][data-mode="night"] .scene .genre-card,
   :root[data-theme="mystery"][data-mode="night"] .scene .genre-card,
+  :root[data-theme="horror"][data-mode="night"] .scene .genre-card,
   .story-cursor,
   .story-loading__pulse {
     animation: none !important;
@@ -1345,6 +1741,10 @@
 
   :root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::after {
     opacity: 0.42;
+  }
+
+  :root[data-theme="horror"][data-mode="night"] .scene__atmosphere::before {
+    opacity: 0.85;
   }
 
   .story-cursor {
