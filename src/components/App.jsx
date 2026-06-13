@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import '../index.css';
 import '../styles/theme-tokens.css';
 import { STORY_GENRES } from '../config/genres';
@@ -41,6 +41,13 @@ function App() {
 
   // Whether the user has answered the current checkpoint (waiting for "Continue")
   const [checkpointAnswered, setCheckpointAnswered] = useState(false);
+
+  // Keep data-theme in sync with selected genre across quiz → story flow
+  useEffect(() => {
+    if (!selectedGenre) return;
+    const genre = STORY_GENRES.find(g => g.id === selectedGenre);
+    if (genre?.theme) setTheme(genre.theme);
+  }, [selectedGenre, uiPhase, setTheme]);
 
   // --- Handlers ---
 
@@ -211,15 +218,16 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__content ui-font">
-            <div className="mb-6 relative text-center sm:text-left">
+          <div className="scene__atmosphere" aria-hidden="true" />
+          <div className="scene__content scene__content--intake ui-font">
+            <div className="mb-5 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
-              <h1 className="text-3xl font-bold mb-2 tracking-wide genre-title">SpellPath</h1>
+              <h1 className="text-[1.6875rem] font-bold mb-1.5 tracking-wide genre-title">SpellPath</h1>
               <p className="ui-subtitle">Choose your learning adventure</p>
             </div>
 
-            <form onSubmit={handleSubjectSubmit} className="space-y-6">
-              <div className="genre-card p-4 rounded-lg border">
+            <form onSubmit={handleSubjectSubmit} className="space-y-5">
+              <div className="genre-card p-3.5 rounded-lg border">
                 <label className="ui-label">
                   What would you like to learn?
                 </label>
@@ -228,16 +236,16 @@ function App() {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   placeholder="e.g., quantum physics, medieval cooking, JavaScript..."
-                  className="w-full px-4 py-3 genre-input rounded-lg focus:outline-none"
+                  className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none"
                   disabled={isAnalyzing}
                 />
               </div>
 
-              <div className="genre-card p-4 rounded-lg border">
+              <div className="genre-card p-3.5 rounded-lg border">
                 <label className="ui-label">
                   Choose your story style
                 </label>
-                <div className="grid grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 gap-2.5">
                   {STORY_GENRES.map(genre => (
                     <button
                       key={genre.id}
@@ -246,7 +254,7 @@ function App() {
                       className={`genre-picker__option${selectedGenre === genre.id ? ' genre-picker__option--selected' : ''}`}
                     >
                       <div className="flex items-center space-x-3">
-                        <span className="text-2xl">{genre.icon}</span>
+                        <span className="text-[1.375rem] leading-none">{genre.icon}</span>
                         <div>
                           <div className="ui-genre-name">
                             {genre.name}
@@ -261,11 +269,11 @@ function App() {
                 </div>
               </div>
 
-              <div className="genre-card p-4 rounded-lg border">
+              <div className="genre-card p-3.5 rounded-lg border">
                 <button
                   type="submit"
                   disabled={!subject.trim() || !selectedGenre || isAnalyzing}
-                  className="w-full genre-button ui-btn px-6 py-3 rounded-lg"
+                  className="w-full genre-button ui-btn px-5 py-[0.6875rem] rounded-lg"
                 >
                   {isAnalyzing ? 'Preparing your quiz...' : 'Begin Your Adventure'}
                 </button>
@@ -285,6 +293,7 @@ function App() {
     return (
       <>
         <main className="scene">
+          <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -312,6 +321,7 @@ function App() {
     return (
       <>
         <main className="scene">
+          <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -355,6 +365,7 @@ function App() {
     return (
       <>
         <main className="scene">
+          <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -379,6 +390,7 @@ function App() {
     return (
       <>
         <main className="scene">
+          <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content ui-font">
             <div className="mb-6 relative text-center sm:text-left">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
@@ -425,7 +437,8 @@ function App() {
     return (
       <>
         <main className="scene">
-          <div className="scene__content">
+          <div className="scene__atmosphere" aria-hidden="true" />
+          <div className="scene__content scene__content--story">
             <div className="mb-6 relative text-center sm:text-left story-chrome">
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
               <h2 className="text-2xl font-bold genre-title mb-2">Your Story</h2>

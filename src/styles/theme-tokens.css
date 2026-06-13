@@ -74,7 +74,6 @@
   --color-accent: #C96A2B;
   --color-accent-soft: #8C3B1C;
   --color-highlight: #F0D197;
-  
   --bg: var(--color-bg);
   --fg: var(--color-text);
   --accent: var(--color-accent);
@@ -371,6 +370,116 @@
   padding: 2rem 1.25rem 3rem;
 }
 
+/* Story reading column — ~two-thirds of viewport width */
+.scene__content--story {
+  max-width: 66.67vw;
+  width: 100%;
+}
+
+/* Full-viewport fantasy atmosphere (fixed behind all content) */
+.scene__atmosphere {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+:root[data-theme="fantasy"] .scene__atmosphere {
+  display: block;
+}
+
+.scene__atmosphere::before,
+.scene__atmosphere::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform, background-position, opacity;
+}
+
+/* Fantasy day — parchment base + warm drift + breeze motes */
+:root[data-theme="fantasy"][data-mode="day"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene__atmosphere {
+  background: linear-gradient(175deg, #faf3ea 0%, var(--color-bg) 45%, #ebe0d0 100%);
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene__atmosphere::before {
+  opacity: 0.9;
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(ellipse 50% 38% at 20% 18%, color-mix(in srgb, var(--color-highlight) 55%, transparent), transparent 58%),
+    radial-gradient(ellipse 48% 36% at 78% 72%, color-mix(in srgb, var(--color-accent-soft) 48%, transparent), transparent 55%),
+    radial-gradient(ellipse 42% 32% at 52% 12%, color-mix(in srgb, #e8c878 65%, transparent), transparent 52%);
+  background-size: 260% 260%;
+  background-repeat: no-repeat;
+  animation-name: fantasy-day-drift;
+  animation-duration: 18s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene__atmosphere::after {
+  opacity: 0.7;
+  background-image:
+    radial-gradient(ellipse 90px 28px at 10% 35%, rgba(212, 168, 67, 0.28), transparent 72%),
+    radial-gradient(ellipse 110px 22px at 45% 65%, rgba(192, 128, 161, 0.2), transparent 70%),
+    radial-gradient(ellipse 75px 26px at 78% 25%, rgba(234, 210, 160, 0.32), transparent 68%),
+    radial-gradient(ellipse 95px 24px at 28% 82%, rgba(212, 168, 67, 0.22), transparent 70%),
+    radial-gradient(2px 2px at 14% 22%, rgba(139, 100, 60, 0.55), transparent),
+    radial-gradient(1.75px 1.75px at 32% 48%, rgba(139, 100, 60, 0.45), transparent),
+    radial-gradient(2px 2px at 50% 18%, rgba(180, 130, 50, 0.5), transparent),
+    radial-gradient(1.75px 1.75px at 68% 58%, rgba(139, 100, 60, 0.42), transparent),
+    radial-gradient(2px 2px at 84% 38%, rgba(180, 130, 50, 0.48), transparent),
+    radial-gradient(1.75px 1.75px at 22% 74%, rgba(139, 100, 60, 0.4), transparent),
+    radial-gradient(2px 2px at 58% 88%, rgba(180, 130, 50, 0.45), transparent);
+  background-size: 300px 300px;
+  background-repeat: repeat;
+  animation-name: fantasy-day-breeze;
+  animation-duration: 32s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 55%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--color-accent-soft) 20%, transparent);
+}
+
+/* Home / intake screen — slightly tighter than default so content fits without browser zoom */
+.scene__content--intake {
+  --font-ui-size: 16px;
+  --font-ui-size-sm: 15px;
+  --font-ui-size-lg: 18px;
+  --font-ui-size-xl: 21px;
+  padding: calc(1.625rem - 4px) 1.2rem calc(2.25rem - 4px);
+  line-height: 1.5;
+}
+
+.scene__content--intake .genre-picker__option {
+  padding: 0.85rem 0.925rem;
+}
+
+.scene__content--intake .ui-label {
+  margin-bottom: 0.625rem;
+}
+
+.scene__content--intake .ui-genre-desc {
+  margin-top: 0.15rem;
+  line-height: 1.4;
+}
+
 /* ============================================
    UI FONT — forms, quiz, chrome (uses genre theme fonts)
    Sizes stay in px; font-family comes from --font-body / --font-display
@@ -546,13 +655,28 @@
    FANTASY ATMOSPHERE
    ============================================ */
 
-@keyframes fantasy-nebula-drift {
-  0% { background-position: 0% 0%, 100% 100%, 50% 50%; }
-  100% { background-position: 10% 5%, 90% 95%, 55% 45%; }
+@keyframes fantasy-day-drift {
+  0% { background-position: 0% 10%; }
+  100% { background-position: 100% 90%; }
+}
+
+@keyframes fantasy-day-breeze {
+  0% { background-position: 0 0; }
+  100% { background-position: 300px 80px; }
+}
+
+@keyframes fantasy-night-nebula {
+  0% { background-position: 0% 25%; }
+  100% { background-position: 100% 75%; }
+}
+
+@keyframes fantasy-night-stars-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 260px 520px; }
 }
 
 @keyframes fantasy-twinkle {
-  0%, 100% { opacity: 0.55; }
+  0%, 100% { opacity: 0.72; }
   50% { opacity: 1; }
 }
 
@@ -576,50 +700,62 @@
   50% { transform: scaleX(1); opacity: 1; }
 }
 
-/* Fantasy day — parchment warmth */
-:root[data-theme="fantasy"][data-mode="day"] .scene {
-  background:
-    radial-gradient(ellipse 80% 50% at 15% 0%, color-mix(in srgb, var(--color-highlight) 22%, transparent), transparent 55%),
-    radial-gradient(ellipse 60% 45% at 95% 8%, color-mix(in srgb, var(--color-accent-soft) 18%, transparent), transparent 50%),
-    linear-gradient(175deg, #faf3ea 0%, var(--color-bg) 35%, #ebe0d0 100%);
-}
-
-:root[data-theme="fantasy"][data-mode="day"] .scene .genre-card {
-  border-color: color-mix(in srgb, var(--color-accent-soft) 55%, #ffffff);
-  box-shadow:
-    var(--card-shadow),
-    inset 0 1px 0 rgba(255, 255, 255, 0.45),
-    0 0 0 1px color-mix(in srgb, var(--color-accent-soft) 20%, transparent);
-}
-
-/* Fantasy night — nebula + stars */
+/* Fantasy night — nebula drift + dense star field on full viewport layer */
 :root[data-theme="fantasy"][data-mode="night"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere {
+  background: linear-gradient(180deg, #120228 0%, var(--color-bg) 45%, #0a0118 100%);
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::before {
   background:
-    radial-gradient(ellipse 100% 70% at 50% -15%, color-mix(in srgb, var(--color-accent) 40%, transparent), transparent 58%),
-    radial-gradient(ellipse 55% 45% at 85% 65%, color-mix(in srgb, var(--color-accent-soft) 14%, transparent), transparent),
-    radial-gradient(ellipse 40% 35% at 10% 80%, color-mix(in srgb, var(--color-highlight) 10%, transparent), transparent),
-    linear-gradient(180deg, #120228 0%, var(--color-bg) 45%, #0a0118 100%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
-  animation: fantasy-nebula-drift 28s ease-in-out infinite alternate;
+    radial-gradient(ellipse 100% 70% at 50% -15%, color-mix(in srgb, var(--color-accent) 55%, transparent), transparent 58%),
+    radial-gradient(ellipse 55% 45% at 85% 65%, color-mix(in srgb, var(--color-accent-soft) 28%, transparent), transparent),
+    radial-gradient(ellipse 40% 35% at 10% 80%, color-mix(in srgb, var(--color-highlight) 22%, transparent), transparent),
+    radial-gradient(ellipse 35% 30% at 70% 25%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent);
+  background-size: 240% 240%;
+  background-repeat: no-repeat;
+  animation-name: fantasy-night-nebula;
+  animation-duration: 26s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::after {
+  opacity: 0.92;
+  background-image:
+    radial-gradient(1.75px 1.75px at 8% 12%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(1.25px 1.25px at 18% 38%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(2px 2px at 28% 22%, rgba(255, 214, 138, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 38% 58%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 48% 14%, rgba(180, 225, 228, 0.8), transparent),
+    radial-gradient(1.25px 1.25px at 58% 72%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(2px 2px at 68% 34%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 78% 52%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 88% 18%, rgba(255, 214, 138, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 12% 68%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.75px 1.75px at 22% 82%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 32% 48%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 42% 88%, rgba(180, 225, 228, 0.7), transparent),
+    radial-gradient(1.25px 1.25px at 52% 28%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(2px 2px at 62% 62%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(1.25px 1.25px at 72% 8%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 82% 78%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1.25px 1.25px at 92% 42%, rgba(255, 214, 138, 0.75), transparent);
+  background-size: 260px 260px;
+  background-repeat: repeat;
+  animation-name: fantasy-night-stars-drift, fantasy-twinkle;
+  animation-duration: 50s, 8s;
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: normal, alternate;
 }
 
 :root[data-theme="fantasy"][data-mode="night"] .scene::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-  opacity: 0.85;
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 18%, rgba(255, 255, 255, 0.9), transparent),
-    radial-gradient(1px 1px at 28% 62%, rgba(255, 255, 255, 0.6), transparent),
-    radial-gradient(1.5px 1.5px at 45% 32%, rgba(255, 255, 255, 0.75), transparent),
-    radial-gradient(1px 1px at 62% 78%, rgba(255, 255, 255, 0.5), transparent),
-    radial-gradient(1.5px 1.5px at 78% 22%, rgba(255, 214, 138, 0.8), transparent),
-    radial-gradient(1px 1px at 88% 55%, rgba(255, 255, 255, 0.65), transparent),
-    radial-gradient(1px 1px at 5% 88%, rgba(180, 225, 228, 0.7), transparent),
-    radial-gradient(1.5px 1.5px at 92% 8%, rgba(255, 255, 255, 0.85), transparent);
-  animation: fantasy-twinkle 7s ease-in-out infinite;
+  display: none;
 }
 
 :root[data-theme="fantasy"][data-mode="night"] .scene .genre-card {
@@ -636,17 +772,33 @@
    ============================================ */
 
 .story-beat {
+  position: relative;
   font-family: var(--font-body, "Playfair Display", serif);
 }
 
 .story-narrative {
   position: relative;
+  z-index: 1;
   border-left: 3px solid color-mix(in srgb, var(--color-highlight) 70%, var(--color-accent));
 }
 
-:root[data-theme="fantasy"] .story-narrative {
-  background:
-    linear-gradient(135deg, color-mix(in srgb, var(--color-bg-alt) 94%, transparent), color-mix(in srgb, var(--color-bg) 88%, transparent));
+:root[data-theme="fantasy"] .story-narrative.genre-card {
+  background-color: color-mix(in srgb, var(--genre-card-surface) 18%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bg-alt) 22%, transparent),
+    color-mix(in srgb, var(--color-bg) 12%, transparent)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-theme="fantasy"] .story-checkpoint {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--genre-card-surface) 45%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .story-narrative__toolbar {
@@ -678,9 +830,9 @@
 .story-paragraph {
   color: var(--color-text);
   font-family: var(--font-body, "Playfair Display", serif);
-  font-size: 1.0625rem;
-  line-height: 1.85;
-  letter-spacing: 0.012em;
+  font-size: 1.5rem;
+  line-height: 1.65;
+  letter-spacing: 0.01em;
   margin: 0;
 }
 
@@ -817,14 +969,17 @@
   animation: fantasy-shimmer 2s ease-in-out infinite;
 }
 
-/* Reduced motion — disable decorative animation */
+/* Reduced motion — disable fast/blinking effects only; keep slow ambient drift */
 @media (prefers-reduced-motion: reduce) {
-  :root[data-theme="fantasy"][data-mode="night"] .scene,
-  :root[data-theme="fantasy"][data-mode="night"] .scene::before,
+  :root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::after,
   :root[data-theme="fantasy"][data-mode="night"] .scene .genre-card,
   .story-cursor,
   .story-loading__pulse {
     animation: none !important;
+  }
+
+  :root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::after {
+    opacity: 0.92;
   }
 
   .story-cursor {
