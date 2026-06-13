@@ -220,13 +220,19 @@ function App() {
         <main className="scene">
           <div className="scene__atmosphere" aria-hidden="true" />
           <div className="scene__content scene__content--intake ui-font">
-            <div className="mb-5 text-center sm:text-left">
-              <Toolbar onOpenSettings={() => setShowSettings(true)} />
-              <h1 className="text-[1.6875rem] font-bold mb-1.5 tracking-wide genre-title">SpellPath</h1>
+            <div className="mb-4 text-center sm:text-left">
+              <Toolbar
+                onOpenSettings={() => setShowSettings(true)}
+                leading={
+                  <h1 className="text-[1.6875rem] font-bold tracking-wide genre-title m-0">
+                    SpellPath
+                  </h1>
+                }
+              />
               <p className="ui-subtitle">Choose your learning adventure</p>
             </div>
 
-            <form onSubmit={handleSubjectSubmit} className="space-y-5">
+            <form onSubmit={handleSubjectSubmit} className="space-y-4">
               <div className="genre-card p-3.5 rounded-lg border">
                 <label className="ui-label">
                   What would you like to learn?
