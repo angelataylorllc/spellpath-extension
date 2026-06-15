@@ -1,19 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNarrativeReveal } from '../hooks/useNarrativeReveal';
-
-function renderWithDialogue(text) {
-  const parts = text.split(/("[^"]*")/g);
-  return parts.map((part, i) => {
-    if (part.startsWith('"') && part.endsWith('"')) {
-      return (
-        <span key={i} className="story-dialogue">
-          {part}
-        </span>
-      );
-    }
-    return part;
-  });
-}
+import { parseNarrativeBlocks } from './parseNarrativeBlocks';
 
 const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading }) => {
   const [selected, setSelected] = useState(null);
@@ -65,16 +52,31 @@ const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading }) => {
           )}
         </div>
 
-        {visibleParagraphs.map((para, i) => (
-          para ? (
-            <p key={i} className="story-paragraph">
-              {renderWithDialogue(para)}
-              {isTyping && i === visibleParagraphs.length - 1 && (
-                <span className="story-cursor" aria-hidden="true" />
-              )}
-            </p>
-          ) : null
-        ))}
+        {visibleParagraphs.map((para, paraIndex) => {
+          if (!para) return null;
+
+          const blocks = parseNarrativeBlocks(para);
+          const isLastParagraph = paraIndex === visibleParagraphs.length - 1;
+
+          return (
+            <div key={paraIndex} className="story-paragraph-group">
+              {blocks.map((block, blockIndex) => {
+                const isLastBlock = isLastParagraph && blockIndex === blocks.length - 1;
+                const className =
+                  block.type === 'dialogue' ? 'story-dialogue-line' : 'story-paragraph';
+
+                return (
+                  <p key={blockIndex} className={className}>
+                    {block.text}
+                    {isTyping && isLastBlock && (
+                      <span className="story-cursor" aria-hidden="true" />
+                    )}
+                  </p>
+                );
+              })}
+            </div>
+          );
+        })}
       </article>
 
       {checkpoint && narrativeComplete && (
