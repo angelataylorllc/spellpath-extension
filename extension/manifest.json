@@ -2,20 +2,15 @@
     "manifest_version": 3,
     "name": "Spellpath",
     "permissions": [
-        "storage"
+        "storage",
+        "tabs"
     ],
     "description": "A choose-your-adventure learning tool powered by GPT.",
     "version": "0.1",
-    "icons": {
-      "48": "icon.png"
-    },
     "background": {
       "service_worker": "background.js"
     },
     "action": {
-      "default_title": "Open Spellpath",
-      "default_icon": {
-        "48": "icon.png"
-      }
+      "default_title": "Open Spellpath"
     }
   }

@@ -1,4 +1,5 @@
 import { getOptionalUserOpenAIKey } from './apiCredentials';
+import { normalizeQuotes } from '../../lib/normalizeQuotes.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
@@ -133,9 +134,13 @@ function mockIntakeQuestions({ subject }) {
   };
 }
 
-// ---------------------------------------------------------------------------
-// API functions
-// ---------------------------------------------------------------------------
+function normalizeBeatClient(beat) {
+  if (!beat || typeof beat !== 'object') return beat;
+  if (typeof beat.narrative === 'string') {
+    return { ...beat, narrative: normalizeQuotes(beat.narrative) };
+  }
+  return beat;
+}
 
 export async function generateIntakeQuestions(payload) {
   try {
@@ -178,9 +183,9 @@ export async function generateBeat(payload) {
       throw new Error(errorText || 'Failed to generate beat');
     }
 
-    return await response.json();
+    return normalizeBeatClient(await response.json());
   } catch (err) {
     console.error('Beat generation failed, falling back to mock:', err);
-    return mockBeat(payload);
+    return normalizeBeatClient(mockBeat(payload));
   }
 }

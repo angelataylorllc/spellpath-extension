@@ -1,6 +1,8 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { resolveOpenAIForRequest, SPELLPATH_BYOK_HEADER } from './server/lib/aiProvider.js';
+import { normalizeBeatResponse } from './server/lib/normalizeBeat.js';
+import { parseModelJson } from './server/lib/parseModelJson.js';
 import { recordOpenAIUsage } from './server/lib/usageMeter.js';
 
 dotenv.config();
@@ -93,8 +95,8 @@ Return ONLY JSON matching this schema:
 FORMAT for "narrative" (critical):
 - Use EXACTLY four or five paragraphs, separated only by \\n\\n (double newline) between paragraphs.
 - Target length: 250–400 words total. No bullet lists. No “In this section we will…”
-- Dialogue (required): include at least FIVE short spoken lines in double quotes, distributed across the beat
-  (e.g. "Like this."). Lines can be one sentence or a clause; avoid long speeches.
+- Dialogue (required): include at least FIVE short spoken lines in straight ASCII double quotes only
+  (e.g. "Like this." — never curly/smart quotes like “ or ”). Lines can be one sentence or a clause; avoid long speeches.
 - Paragraph 1: Open with a NEW concrete hook — vary the sensory channel (sound, smell, touch, motion, temperature).
   Do NOT reuse the same opening image or sentence pattern as previousNarrativeOpening when it is provided
   (e.g. do not repeat “moon + market + silence + stalls” if that text appeared before).
@@ -196,8 +198,7 @@ async function callOpenAI(req, route, { systemPrompt, userPayload, maxTokens, te
   }
 
   const userJson = JSON.stringify(userPayload);
-
-  const completion = await client.chat.completions.create({
+  const request = {
     model: 'gpt-4o-mini',
     response_format: { type: 'json_object' },
     temperature,
@@ -206,25 +207,36 @@ async function callOpenAI(req, route, { systemPrompt, userPayload, maxTokens, te
       { role: 'system', content: systemPrompt },
       { role: 'user', content: userJson },
     ],
-  });
+  };
 
-  const usage = completion.usage || {};
-  recordOpenAIUsage({
-    route,
-    billingSource,
-    promptTokens: usage.prompt_tokens,
-    completionTokens: usage.completion_tokens,
-    totalTokens: usage.total_tokens,
-  });
+  let lastParseError;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const completion = await client.chat.completions.create(request);
+    const choice = completion.choices[0] || {};
+    const finishReason = choice.finish_reason || null;
 
-  const raw = completion.choices[0]?.message?.content;
-  if (!raw) throw new Error('No content returned from model');
+    const usage = completion.usage || {};
+    recordOpenAIUsage({
+      route,
+      billingSource,
+      promptTokens: usage.prompt_tokens,
+      completionTokens: usage.completion_tokens,
+      totalTokens: usage.total_tokens,
+    });
 
-  try {
-    return JSON.parse(raw);
-  } catch {
-    throw new Error('Failed to parse model response');
+    try {
+      return parseModelJson(choice.message?.content, { route, finishReason });
+    } catch (err) {
+      lastParseError = err;
+      if (finishReason === 'length') {
+        console.warn(`[spellpath] ${route} response truncated (attempt ${attempt + 1}); retrying…`);
+      } else if (attempt === 0) {
+        console.warn(`[spellpath] ${route} JSON parse failed (attempt 1); retrying…`);
+      }
+    }
   }
+
+  throw lastParseError || new Error('Failed to parse model response');
 }
 
 // ---------------------------------------------------------------------------
@@ -272,7 +284,7 @@ app.post('/api/scaffold', async (req, res) => {
     const parsed = await callOpenAI(req, 'scaffold', {
       systemPrompt: scaffoldSystemPrompt,
       userPayload: { subject, genre, mode, level: level || 'beginner', answers: answers || [] },
-      maxTokens: 500,
+      maxTokens: 1500,
       temperature: 0.5,
     });
 
@@ -304,7 +316,7 @@ app.post('/api/beat', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: scaffold, currentBeat' });
     }
 
-    const parsed = await callOpenAI(req, 'beat', {
+    const parsed = normalizeBeatResponse(await callOpenAI(req, 'beat', {
       systemPrompt: beatSystemPrompt,
       userPayload: {
         scaffold,
@@ -322,7 +334,7 @@ app.post('/api/beat', async (req, res) => {
       },
       maxTokens: 1200,
       temperature: 0.78,
-    });
+    }));
 
     return res.json(parsed);
   } catch (err) {
@@ -373,4 +385,11 @@ app.get('/api/health', (_req, res) =>
 
 app.listen(port, () => {
   console.log(`SpellPath API running on http://localhost:${port}`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${port} is already in use — another SpellPath API is still running.`);
+    console.error(`Stop it first, then restart:  fuser -k ${port}/tcp`);
+    process.exit(1);
+  }
+  throw err;
 });

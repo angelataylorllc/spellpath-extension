@@ -11,6 +11,12 @@ import SceneAtmosphere from './SceneAtmosphere';
 import IntakeQuestion from './IntakeQuestion';
 import StoryBeat from '../stories/StoryBeat';
 import { useStory, STORY_PHASES } from '../stories/useStory';
+import {
+  buildSessionArchive,
+  downloadStoryJson,
+  openStoryPdf,
+  persistSessionLog,
+} from '../stories/storyExport';
 import { generateIntakeQuestions } from '../services/contentApi';
 
 function App() {
@@ -30,6 +36,8 @@ function App() {
   // Story engine hook
   const {
     phase: enginePhase,
+    scaffold,
+    learnerProfile,
     currentBeatData,
     beatIndex,
     totalBeats,
@@ -44,6 +52,46 @@ function App() {
 
   // Whether the user has answered the current checkpoint (waiting for "Continue")
   const [checkpointAnswered, setCheckpointAnswered] = useState(false);
+  const [sessionLogged, setSessionLogged] = useState(false);
+
+  const buildArchive = () =>
+    buildSessionArchive({
+      subject,
+      genre: selectedGenre,
+      mode,
+      level: learnerProfile?.level,
+      scaffold,
+      completedBeats: storySoFar,
+      learnerProfile,
+      intakeAnswers: userAnswers,
+    });
+
+  useEffect(() => {
+    if (enginePhase !== STORY_PHASES.COMPLETE || storySoFar.length === 0 || sessionLogged) return;
+
+    const archive = buildSessionArchive({
+      subject,
+      genre: selectedGenre,
+      mode,
+      level: learnerProfile?.level,
+      scaffold,
+      completedBeats: storySoFar,
+      learnerProfile,
+      intakeAnswers: userAnswers,
+    });
+    persistSessionLog(archive);
+    setSessionLogged(true);
+  }, [
+    enginePhase,
+    storySoFar,
+    sessionLogged,
+    subject,
+    selectedGenre,
+    mode,
+    learnerProfile,
+    scaffold,
+    userAnswers,
+  ]);
 
   // Keep data-theme in sync with selected genre across quiz → story flow
   useEffect(() => {
@@ -189,6 +237,7 @@ function App() {
 
   const handleStartOver = () => {
     resetEngine();
+    setSessionLogged(false);
     setSubject('');
     setSelectedGenre('');
     setQuizData(null);
@@ -422,6 +471,25 @@ function App() {
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {storySoFar.length > 0 && (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => downloadStoryJson(buildArchive())}
+                    className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg"
+                  >
+                    Download JSON
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openStoryPdf(buildArchive())}
+                    className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg"
+                  >
+                    Download PDF
+                  </button>
                 </div>
               )}
 

@@ -1,3 +1,5 @@
+import { normalizeQuotes } from '../../lib/normalizeQuotes.js';
+
 /**
  * Split narrative text into prose and dialogue blocks for display.
  * Handles partial text during typewriter reveal (unclosed trailing quote).
@@ -8,20 +10,21 @@
 export function parseNarrativeBlocks(text) {
   if (!text) return [];
 
+  const normalized = normalizeQuotes(text);
   const blocks = [];
   const regex = /"[^"]*"/g;
   let lastEnd = 0;
   let match;
 
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = regex.exec(normalized)) !== null) {
     if (match.index > lastEnd) {
-      appendProse(blocks, text.slice(lastEnd, match.index));
+      appendProse(blocks, normalized.slice(lastEnd, match.index));
     }
     blocks.push({ type: 'dialogue', text: match[0] });
     lastEnd = match.index + match[0].length;
   }
 
-  const tail = text.slice(lastEnd);
+  const tail = normalized.slice(lastEnd);
   if (!tail) return blocks;
 
   const openQuote = tail.indexOf('"');

@@ -109,6 +109,8 @@ export const useStory = () => {
       selectedIndex,
       correct,
       beatSummary: currentBeatData?.beatSummary || '',
+      narrative: currentBeatData?.narrative || '',
+      checkpoint: currentBeatData?.checkpoint,
     });
 
     if (currentBeatData?.scaffoldAdjustment) {

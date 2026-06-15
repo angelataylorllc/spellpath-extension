@@ -7,6 +7,8 @@
 // This engine manages phase progression, scaffold state, beat cursor,
 // and the learner profile. It does NOT generate content or call APIs.
 
+import { parseNarrativeBlocks } from './parseNarrativeBlocks';
+
 export const STORY_PHASES = {
   INTAKE: 'intake',
   SCAFFOLD: 'scaffold',
@@ -57,13 +59,31 @@ export class StoryEngine {
 
   // --- Checkpoint handling ---
 
-  recordCheckpoint({ selectedIndex, correct, beatSummary }) {
+  recordCheckpoint({ selectedIndex, correct, beatSummary, narrative, checkpoint }) {
     const beat = this.getCurrentBeat();
+    const options = checkpoint?.options || [];
+    const narrativeText = narrative || '';
 
     this.completedBeats.push({
       beatId: beat?.id ?? `beat_${this.beatCursor}`,
       beatTitle: beat?.title ?? '',
+      concept: beat?.concept ?? '',
       summary: beatSummary ?? '',
+      narrative: narrativeText,
+      narrativeBlocks: narrativeText ? parseNarrativeBlocks(narrativeText) : [],
+      checkpointRecord: checkpoint
+        ? {
+            question: checkpoint.question,
+            options: options.map(o => ({
+              label: o.label ?? o.text ?? o.option ?? 'Option',
+              correct: o.correct,
+            })),
+            hint: checkpoint.hint || null,
+            selectedIndex,
+            selectedLabel: options[selectedIndex]?.label ?? null,
+            correct,
+          }
+        : null,
       correct,
       selectedIndex,
     });
