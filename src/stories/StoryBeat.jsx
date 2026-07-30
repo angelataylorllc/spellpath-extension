@@ -35,6 +35,14 @@ const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading }) => {
   };
 
   const correctIndex = checkpoint?.options?.findIndex(o => o.correct);
+  const wasCorrect = submitted && selected !== null
+    ? checkpoint.options[selected]?.correct ?? false
+    : null;
+  const checkpointFeedback = submitted && wasCorrect !== null
+    ? (wasCorrect
+        ? checkpoint.feedbackCorrect
+        : checkpoint.feedbackIncorrect || checkpoint.hint)
+    : null;
 
   return (
     <div className="story-beat space-y-6">
@@ -120,8 +128,16 @@ const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading }) => {
             </button>
           )}
 
-          {submitted && checkpoint.hint && !checkpoint.options[selected]?.correct && (
-            <p className="story-checkpoint__hint">{checkpoint.hint}</p>
+          {submitted && checkpointFeedback && (
+            <p
+              className={`story-checkpoint__feedback${
+                wasCorrect
+                  ? ' story-checkpoint__feedback--correct'
+                  : ' story-checkpoint__feedback--incorrect'
+              }`}
+            >
+              {checkpointFeedback}
+            </p>
           )}
         </div>
       )}

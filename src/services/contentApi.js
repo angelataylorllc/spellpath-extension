@@ -86,6 +86,8 @@ function mockBeat({ currentBeat, learnerProfile }) {
         { label: `The rule beneath what you see`, correct: true },
         { label: `Whatever lets you leave fastest`, correct: false },
       ],
+      feedbackCorrect: `The scene keeps pointing at the underlying rule, not the surface detail.`,
+      feedbackIncorrect: `The visible object is a distraction — the beat is testing the deeper pattern behind it.`,
       hint: `What would change if the root cause were different?`,
     },
     beatSummary: `Scene beat on ${concept} (${level}); checkpoint tests grasp of core idea.`,
@@ -93,45 +95,41 @@ function mockBeat({ currentBeat, learnerProfile }) {
   };
 }
 
-function mockIntakeQuestions({ subject }) {
-  return {
-    questions: [
-      {
-        id: 'ai_1',
-        text: `Which of these terms related to ${subject} sounds most familiar?`,
-        type: 'choice',
-        choices: [
-          { label: 'None of them ring a bell', value: 'none' },
-          { label: 'I recognize some but can\'t explain them', value: 'recognize' },
-          { label: 'I could explain most of them', value: 'explain' },
-        ],
-      },
-      {
-        id: 'ai_2',
-        text: `The most fundamental idea behind ${subject} is ___`,
-        type: 'fill_blank',
-        placeholder: 'your best guess...',
-      },
-      {
-        id: 'ai_3',
-        text: `What do you already know about ${subject}? Anything at all is great.`,
-        type: 'textarea',
-        placeholder: 'No wrong answers here...',
-      },
-      {
-        id: 'ai_4',
-        text: `What specific questions do you have about ${subject}?`,
-        type: 'textarea',
-        placeholder: 'What are you most curious about?',
-      },
-      {
-        id: 'ai_5',
-        text: `Does this tie into a larger project or plan? If so, briefly describe it.`,
-        type: 'textarea',
-        placeholder: 'e.g., a school project, a personal goal, building something...',
-      },
-    ],
-  };
+function mockIntakeQuestions({ subject, learningGoals }) {
+  const skipGoalsTextarea = Boolean(String(learningGoals || '').trim());
+  const questions = [
+    {
+      id: 'ai_1',
+      text: `Which best describes your familiarity with ${subject}?`,
+      type: 'choice',
+      choices: [
+        { label: 'Never heard of it', value: 'none' },
+        { label: 'Heard of it but can\'t explain it', value: 'recognize' },
+        { label: 'Could explain the basics', value: 'explain' },
+      ],
+    },
+    {
+      id: 'ai_2',
+      text: `Which aspect of ${subject} interests you most right now?`,
+      type: 'choice',
+      choices: [
+        { label: 'Core concepts / how it works', value: 'concepts' },
+        { label: 'Practical steps / how to use it', value: 'practical' },
+        { label: 'Connecting it to other things I know', value: 'connections' },
+      ],
+    },
+  ];
+
+  if (!skipGoalsTextarea) {
+    questions.push({
+      id: 'ai_3',
+      text: `What do you want to learn or accomplish with ${subject}? (optional)`,
+      type: 'textarea',
+      placeholder: 'e.g., pass a test, build something, understand a specific feature...',
+    });
+  }
+
+  return { questions };
 }
 
 function normalizeBeatClient(beat) {

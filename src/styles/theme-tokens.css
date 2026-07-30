@@ -1954,6 +1954,23 @@
   padding-top: 0.25rem;
 }
 
+.story-checkpoint__feedback {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  margin: 0;
+  padding-top: 0.5rem;
+}
+
+.story-checkpoint__feedback--correct {
+  color: var(--color-accent);
+}
+
+.story-checkpoint__feedback--incorrect {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
 .story-loading__text {
   font-family: var(--font-body, inherit);
   font-size: 1rem;

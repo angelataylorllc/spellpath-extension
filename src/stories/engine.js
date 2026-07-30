@@ -27,6 +27,10 @@ export class StoryEngine {
     // Accumulated from checkpoint responses
     this.learnerProfile = {
       level: 'beginner',
+      age: null,
+      motivation: null,
+      learningGoals: null,
+      learningFocus: null,
       confirmedUnderstandings: [],
       misconceptions: [],
     };
@@ -79,6 +83,8 @@ export class StoryEngine {
               correct: o.correct,
             })),
             hint: checkpoint.hint || null,
+            feedbackCorrect: checkpoint.feedbackCorrect || null,
+            feedbackIncorrect: checkpoint.feedbackIncorrect || null,
             selectedIndex,
             selectedLabel: options[selectedIndex]?.label ?? null,
             correct,
@@ -172,6 +178,10 @@ export class StoryEngine {
     this.currentPhase = STORY_PHASES.INTAKE;
     this.learnerProfile = {
       level: 'beginner',
+      age: null,
+      motivation: null,
+      learningGoals: null,
+      learningFocus: null,
       confirmedUnderstandings: [],
       misconceptions: [],
     };
@@ -180,5 +190,14 @@ export class StoryEngine {
 
   setLevel(level) {
     this.learnerProfile.level = level;
+  }
+
+  setLearnerContext({ age, motivation, learningGoals, learningFocus }) {
+    if (age) this.learnerProfile.age = age;
+    if (motivation) this.learnerProfile.motivation = motivation;
+    if (learningGoals !== undefined) {
+      this.learnerProfile.learningGoals = learningGoals?.trim() || null;
+    }
+    if (learningFocus) this.learnerProfile.learningFocus = learningFocus;
   }
 }

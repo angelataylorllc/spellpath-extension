@@ -4,6 +4,7 @@ import '../styles/theme-tokens.css';
 import '../styles/adventure-campfire.css';
 import '../styles/adventure-wind.css';
 import { STORY_GENRES } from '../config/genres';
+import { LEARNING_FOCUS_OPTIONS } from '../config/learningFocus';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
 import Toolbar from './Toolbar';
@@ -22,6 +23,8 @@ import { generateIntakeQuestions } from '../services/contentApi';
 function App() {
   const { mode, setTheme } = useTheme();
   const [subject, setSubject] = useState('');
+  const [learningGoals, setLearningGoals] = useState('');
+  const [learningFocus, setLearningFocus] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [showSettings, setShowSettings] = useState(false);
 
@@ -60,6 +63,8 @@ function App() {
       genre: selectedGenre,
       mode,
       level: learnerProfile?.level,
+      learningGoals,
+      learningFocus,
       scaffold,
       completedBeats: storySoFar,
       learnerProfile,
@@ -74,6 +79,8 @@ function App() {
       genre: selectedGenre,
       mode,
       level: learnerProfile?.level,
+      learningGoals,
+      learningFocus,
       scaffold,
       completedBeats: storySoFar,
       learnerProfile,
@@ -91,6 +98,8 @@ function App() {
     learnerProfile,
     scaffold,
     userAnswers,
+    learningGoals,
+    learningFocus,
   ]);
 
   // Keep data-theme in sync with selected genre across quiz → story flow
@@ -132,9 +141,16 @@ function App() {
     questions: [
       {
         id: 'u_1',
-        text: 'How old are you?',
-        type: 'text',
-        placeholder: 'e.g., 14, 28, 45...',
+        text: 'What is your age range?',
+        type: 'choice',
+        choices: [
+          { label: 'Under 13', value: 'under_13' },
+          { label: '13–17', value: '13_17' },
+          { label: '18–24', value: '18_24' },
+          { label: '25–44', value: '25_44' },
+          { label: '45–64', value: '45_64' },
+          { label: '65 or older', value: '65_plus' },
+        ],
       },
       {
         id: 'u_2',
@@ -182,6 +198,8 @@ function App() {
           age,
           level,
           motivation,
+          learningGoals: learningGoals.trim(),
+          learningFocus: learningFocus || 'general',
         });
 
         const aiQuestions = result?.questions || [];
@@ -210,7 +228,9 @@ function App() {
   };
 
   const finishQuiz = (answers) => {
+    const age = answers.find(a => a.questionId === 'u_1')?.answer || 'unknown';
     const level = answers.find(a => a.questionId === 'u_2')?.answer || 'beginner';
+    const motivation = answers.find(a => a.questionId === 'u_3')?.answer || 'curious';
     setUiPhase('scaffolding');
     setCheckpointAnswered(false);
 
@@ -219,6 +239,10 @@ function App() {
       genre: selectedGenre,
       mode,
       level,
+      age,
+      motivation,
+      learningGoals: learningGoals.trim(),
+      learningFocus: learningFocus || 'general',
       answers,
     }).then(() => {
       setUiPhase('story');
@@ -239,6 +263,8 @@ function App() {
     resetEngine();
     setSessionLogged(false);
     setSubject('');
+    setLearningGoals('');
+    setLearningFocus('');
     setSelectedGenre('');
     setQuizData(null);
     setCurrentQuestion(0);
@@ -293,10 +319,45 @@ function App() {
                   type="text"
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
-                  placeholder="e.g., quantum physics, medieval cooking, JavaScript..."
+                  placeholder="e.g., Printify, cloud computing, photosynthesis..."
                   className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none"
                   disabled={isAnalyzing}
                 />
+              </div>
+
+              <div className="genre-card p-3.5 rounded-lg border">
+                <label className="ui-label">
+                  What specifically do you want to learn?{' '}
+                  <span className="ui-meta font-normal">(optional)</span>
+                </label>
+                <textarea
+                  value={learningGoals}
+                  onChange={(e) => setLearningGoals(e.target.value)}
+                  placeholder="e.g., connect Printify to Etsy, understand pricing and mockups..."
+                  rows={3}
+                  className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none resize-y min-h-[4.5rem]"
+                  disabled={isAnalyzing}
+                />
+              </div>
+
+              <div className="genre-card p-3.5 rounded-lg border">
+                <label className="ui-label" htmlFor="learning-focus">
+                  Main focus
+                </label>
+                <select
+                  id="learning-focus"
+                  value={learningFocus}
+                  onChange={(e) => setLearningFocus(e.target.value)}
+                  className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none"
+                  disabled={isAnalyzing}
+                >
+                  <option value="">Pick a focus (optional)</option>
+                  {LEARNING_FOCUS_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="genre-card p-3.5 rounded-lg border">
@@ -396,6 +457,11 @@ function App() {
                   Learning: <span className="font-medium">{quizData.subject}</span> |{' '}
                   Style: <span className="font-medium">{currentGenre?.name}</span>
                 </p>
+                {learningGoals.trim() && (
+                  <p className="ui-meta mt-1">
+                    Goal: <span className="font-medium">{learningGoals.trim()}</span>
+                  </p>
+                )}
               </div>
             </div>
 

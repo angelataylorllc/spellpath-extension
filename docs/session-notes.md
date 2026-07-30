@@ -4,6 +4,116 @@ Living doc for project status across sessions. Read this at the start of a new s
 
 ---
 
+## Session 4 — June 14–15, 2026
+
+### Starting State
+
+- Session 3 left **story engine + text layout** as the next focus (typewriter, dialogue, beat flow).
+- Full intake → scaffold → beat pipeline worked, but narrative presentation and export were thin.
+- User loaded extension from **`dist/`** (not project root). API runs separately via `npm run api` on port 4000.
+
+### What We Did
+
+**1. Story narrative layout + typewriter**
+
+- **`parseNarrativeBlocks.js`** — splits prose vs `"dialogue"` segments for rendering.
+- **`lib/normalizeQuotes.js`** — converts curly/smart quotes to straight `"` (fixes inconsistent dialogue splitting).
+- **`StoryBeat.jsx`** — renders `story-paragraph-group` with separate prose vs `story-dialogue-line` styles.
+- **`useNarrativeReveal.js`** — slower typewriter: `CHAR_MS` 14 → 65, `PARAGRAPH_PAUSE_MS` 350 → 1400.
+- **`theme-tokens.css`** — more space between paragraph groups in story card.
+- **Server beat prompt** — requires straight ASCII double quotes in dialogue.
+
+**2. Story engine persistence (for export + recap)**
+
+- **`engine.js` `recordCheckpoint()`** — now stores full beat: `narrative`, `narrativeBlocks`, `concept`, `checkpointRecord` (question, options, hint, selected index/label, correct).
+- **`useStory.js`** — passes `narrative` + `checkpoint` from `currentBeatData` into engine on submit.
+
+**3. JSON + PDF export**
+
+- **`storyExport.js`** — `buildSessionArchive`, `downloadStoryJson`, `openStoryPdf`, `persistSessionLog`.
+- **`App.jsx`** — on journey complete: auto-save session to `chrome.storage.local` (`spellpath_session_logs`, last 50); **Download JSON** + **Download PDF** buttons.
+- **PDF flow:** `openStoryPdf` → HTML in `chrome.storage.session` → `extension/print.html` + `print.js` → `document.write` + `window.print()`.
+- **`manifest.json`** — added `tabs` permission; removed broken `icon.png` refs (were causing extension errors).
+
+**4. API reliability (scaffold parse failures)**
+
+- **`server/lib/parseModelJson.js`** — robust JSON parse (markdown fences, brace extraction, truncated-JSON repair).
+- **`server.js`** — scaffold `maxTokens` 500 → 1500; retry once on parse failure; log `finish_reason`; clearer `EADDRINUSE` message.
+- **`server/lib/normalizeBeat.js`** — normalize beat narrative quotes + checkpoint option labels (`label` / `text` / `option`).
+
+**5. Client-side beat normalization**
+
+- **`contentApi.js`** — `normalizeBeatClient()` applies quote normalization on beat responses.
+
+**6. Pushed to GitHub**
+
+- `905809e` — `feat(ui): Improve story narrative layout and typewriter pacing.`
+- `ee96c98` — `feat: Add story export and harden API JSON parsing.`
+- Repo: `github.com/angelataylorllc/spellpath-extension` (`main`)
+
+### User Testing (exports)
+
+**tiktok story (first PDF try)**
+
+- Export pipeline worked, but Beat 2 was **mock fallback** text (“metal rungs…”) — beat API failed mid-session (likely API restart during generation).
+- Beat 3 checkpoint showed **`undefined`** for options (model used non-`label` fields; fixed in later commit).
+- Sparse page 1 + Chrome print headers (`chrome-extension://…` URL) — layout and browser setting issues.
+
+**dataproc story (second try — healthy run)**
+
+- All 5 beats AI-generated; 5/5 checkpoints correct.
+- JSON archive complete (intake answers, learner profile, full narratives + blocks + checkpoints).
+- PDF: 7 pages, checkpoints render with ✓, no `undefined`, title flows into Beat 1.
+- Minor: dialogue lines still break awkwardly in PDF (quoted line on one row, attribution on next) because `narrativeBlocks` split inline dialogue into separate `<p>` tags.
+
+### Key Files (this session)
+
+| Area | Paths |
+|------|-------|
+| Narrative parsing | `src/stories/parseNarrativeBlocks.js`, `lib/normalizeQuotes.js` |
+| Typewriter | `src/hooks/useNarrativeReveal.js`, `src/stories/StoryBeat.jsx` |
+| Engine / hook | `src/stories/engine.js`, `src/stories/useStory.js` |
+| Export | `src/stories/storyExport.js`, `extension/print.html`, `extension/print.js` |
+| API | `server.js`, `server/lib/parseModelJson.js`, `server/lib/normalizeBeat.js` |
+| UI | `src/components/App.jsx`, `src/styles/theme-tokens.css` |
+| Extension | `extension/manifest.json` |
+
+### Pitfalls Learned
+
+- **Load extension from `dist/`** after `npm run build` — source changes don’t apply until rebuild + reload.
+- **Don’t restart `npm run api` mid-story** — in-flight beat requests fall back to mock content; can also leave port 4000 busy (`EADDRINUSE`). Stop old process first: `fuser -k 4000/tcp`.
+- **Scaffold parse errors** — often truncated JSON; fixed with higher `maxTokens` + `parseModelJson` + retry.
+- **PDF via `window.open` + `document.write`** — blocked in extension context; use `print.html` + session storage instead.
+- **Chrome print dialog** — turn off **Headers and footers** for cleaner PDFs (removes URL/date on every page).
+- **Checkpoint option shape** — model may return `text` instead of `label`; normalize on server + engine + export.
+
+### Current State
+
+- End-to-end flow works: intake → scaffold → beats → complete → JSON/PDF export.
+- Session logs persist locally on complete.
+- API scaffold generation reliable after server restart with latest code.
+- In-app story layout improved (dialogue lines, slower typewriter, paragraph spacing).
+- User satisfied enough for tonight; **more story engine work wanted next session**.
+
+### Next Session — Priority (story engine)
+
+User explicitly wants to continue **story engine** improvements. Suggested order:
+
+1. **Narrative quality / weaving** — beats still feel somewhat lesson-adjacent; slower emotional pacing, less repetitive settings (library/lab returns), stronger `storySoFar` continuity. See Session 2 item #1 and `docs/contracts/03-narration.md`.
+2. **Adaptation loop** — wire `scaffoldAdjustment` from beat responses into engine (`adjustScaffold` exists but rarely triggered). See `docs/contracts/05-adaptation.md`.
+3. **Checkpoint UX** — optional free-text reasoning; narrower question layout (Session 2 item #3).
+4. **Export polish** — merge dialogue + attribution in PDF; optional beat summaries in export footer.
+5. **Resilience** — surface API errors in UI instead of silent mock fallback; retry beat generation.
+
+**Dev reminders**
+
+```bash
+npm run build          # → dist/; reload extension in chrome://extensions
+npm run api            # API on localhost:4000; only one instance
+```
+
+---
+
 ## Session 3 — June 12, 2026
 
 ### Starting State

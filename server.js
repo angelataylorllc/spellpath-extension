@@ -1,8 +1,9 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import { resolveOpenAIForRequest, SPELLPATH_BYOK_HEADER } from './server/lib/aiProvider.js';
-import { normalizeBeatResponse } from './server/lib/normalizeBeat.js';
+import { normalizeBeatResponse, checkpointOptionsValid } from './server/lib/normalizeBeat.js';
 import { parseModelJson } from './server/lib/parseModelJson.js';
+import { normalizeIntakeResponse } from './server/lib/normalizeIntake.js';
 import { recordOpenAIUsage } from './server/lib/usageMeter.js';
 
 dotenv.config();
@@ -34,13 +35,16 @@ app.use((req, res, next) => {
 const scaffoldSystemPrompt = `
 You are SpellPath, an educator who designs adaptive learning journeys as stories.
 
-Given a subject, genre, mode (day/night), learner level, and optional intake answers,
-produce a scaffold — a structural outline of the learning journey.
+Given a subject, genre, mode (day/night), learner age range, experience level, motivation,
+and intake answers, produce a scaffold — a structural outline of the learning journey.
 
 Return ONLY JSON matching this schema:
 {
   "subject": "string",
   "theme": { "genre": "string", "mode": "string" },
+  "topicType": "concept | tool_workflow | skill",
+  "learningFocus": "string — echo from intake, e.g. practical, concepts",
+  "learningGoalsSummary": "string — one sentence distillation of learner goals, or empty",
   "beats": [
     {
       "id": "beat_1",
@@ -63,18 +67,46 @@ Rules:
 - checkpointFocus is for planning only — it should name the idea to test, not the story wording.
 - Mark foundational beats as "rigid", enrichment beats as "soft", tangential beats as "skippable".
 - The first beat should hook the learner, the last should synthesize.
-- Keep the scaffold concise — no full explanations, no prose.`.trim();
+- Keep the scaffold concise — no full explanations, no prose.
+
+Calibration (use age range AND level together):
+- age under_13 or 13_17 → simpler vocabulary, concrete examples, fewer abstract leaps
+- age 65_plus → clear pacing, respectful tone; avoid jargon without context
+- beginner → foundational concepts first; difficultyArc should stay mostly beginner
+- intermediate → connect ideas; include at least one mechanism/relationship beat
+- advanced → nuance, edge cases, or application under constraints
+- motivation "work" or "building" → when intake answers suggest it, favor practical beats over pure metaphor
+- Read intake answers carefully — tailor beat concepts to what the learner said they know and want to learn.
+
+Topic type (infer from subject + learningGoals + learningFocus):
+- "concept" — abstract ideas (cloud computing, photosynthesis, supply and demand)
+- "tool_workflow" — software, platforms, procedures (Printify, Photoshop, filing taxes)
+- "skill" — learnable practice (public speaking, watercolor, chess strategy)
+
+Beat arc by topicType:
+- concept → wonder → mental model → mechanism → implication → synthesis (metaphor-friendly OK)
+- tool_workflow → orient → setup → connect/integrate → apply in scenario → troubleshoot or optimize
+- skill → foundation → core technique → guided practice → refinement → real-world application
+
+learningGoals and learningFocus are PRIMARY constraints:
+- If learningGoals names specific tasks (e.g. "connect Printify to Etsy"), dedicate beats to those — not generic overview.
+- Match learningFocus: "practical" → hands-on scenario beats; "concepts" → how-it-works beats; etc.
+- learningGoalsSummary: distill learningGoals into one plain sentence for beat writers; empty string if none given.`.trim();
 
 const beatSystemPrompt = `
 You are SpellPath, writing ONE beat of an interactive story that secretly teaches one concept.
 
 You receive (JSON user payload):
-- scaffold, currentBeat (concept, narrativeHint, checkpointFocus), learnerProfile, storySoFar
+- scaffold (includes topicType, learningGoalsSummary, learningFocus), currentBeat (concept, narrativeHint, checkpointFocus), learnerProfile (level, age, motivation, learningGoals, learningFocus), storySoFar
 - genre, mode
 - beatIndex (0-based index of this beat in the journey) and totalBeats
 - previousNarrativeOpening (optional): first paragraph of the LAST beat’s narrative — used only to avoid repetition
 
 Tone: choose-your-own-adventure / fiction-first. Build a scene with dialogue and momentum before any “lesson” feeling.
+Calibrate vocabulary and complexity to learnerProfile.age and learnerProfile.level (see scaffold calibration rules).
+Respect scaffold.topicType: tool_workflow beats teach actionable steps through scenario; concept beats may use metaphor
+but must land the idea; skill beats show technique through practice in scene.
+If scaffold.learningGoalsSummary is non-empty, tie this beat's concept directly to those goals — do not drift generic.
 
 Return ONLY JSON matching this schema:
 {
@@ -86,7 +118,9 @@ Return ONLY JSON matching this schema:
       { "label": "string", "correct": true|false },
       { "label": "string", "correct": true|false }
     ],
-    "hint": "optional — a nudge if they struggle, not a spoiler"
+    "feedbackCorrect": "string — one sentence explaining why the correct choice is right",
+    "feedbackIncorrect": "string — one sentence explaining why a wrong choice misses and what the right idea is",
+    "hint": "optional — legacy nudge; prefer feedback fields"
   },
   "beatSummary": "1 plain sentence for continuity (may name the concept — not shown as story text)",
   "scaffoldAdjustment": null
@@ -110,7 +144,12 @@ FORMAT for "narrative" (critical):
 CHECKPOINT (after the story is built):
 - "question": ONE short sentence (18 words max), in-world, sounding like a dilemma or choice — not a textbook.
 - Options: three short labels (each ≤ 10 words). Exactly one correct. Plausible wrong answers in-story.
+- Return options as objects: { "label": "visible text", "correct": true|false } — never bare strings.
 - The checkpoint still tests checkpointFocus, but only through story language.
+- "feedbackCorrect": ONE sentence (max 25 words) — plain language, explains why the correct option fits
+  (may name the concept from checkpointFocus; no "Correct!" or grading tone).
+- "feedbackIncorrect": ONE sentence (max 25 words) — explains why a wrong pick misses the mark and
+  states the right idea; supportive, not punitive.
 
 scaffoldAdjustment may be one of:
 - null (no change needed)
@@ -130,9 +169,16 @@ Rules:
 const intakeSystemPrompt = `
 You are SpellPath, an educator preparing to build a personalized learning journey.
 
-You receive the learner's subject, genre, age, self-reported experience level, and
-motivation. Your job is to generate 5-8 follow-up questions that probe their actual
-knowledge of the subject at varying levels of complexity.
+You receive the learner's subject, genre, age range, self-reported experience level, motivation,
+learningFocus, and optional learningGoals (free text from the home screen). Generate exactly 2–3
+follow-up questions (never more than 3) that probe their knowledge of THE SUBJECT ONLY.
+
+CRITICAL — subject vs genre:
+- "subject" is what the learner wants to LEARN (e.g. "printify", "cloud computing", "photosynthesis").
+- "genre" (fantasy, sci-fi, mystery, etc.) is ONLY the story wrapper used later — it is NOT the topic.
+- Every question MUST be about the subject. NEVER ask about storytelling, fiction, the genre,
+  narrative structure, world-building, plot, characters as literary elements, or "fantasy worlds".
+- Mention the subject by name in every question text (e.g. "With Printify, …" not "In a fantasy world, …").
 
 Return ONLY JSON matching this schema:
 {
@@ -140,35 +186,45 @@ Return ONLY JSON matching this schema:
     {
       "id": "ai_1",
       "text": "question text",
-      "type": "choice | text | textarea | fill_blank",
+      "type": "choice | textarea",
       "choices": [{ "label": "string", "value": "string" }],
-      "placeholder": "optional hint text for input fields"
+      "placeholder": "optional hint text for textarea"
     }
   ]
 }
 
 Field rules:
-- "choices" is REQUIRED when type is "choice", omit for other types.
-- "placeholder" is optional, used for text/textarea/fill_blank types.
-- For "fill_blank", embed exactly one ___ (three underscores) in the "text" where
-  the learner should fill in their answer.
+- "choices" is REQUIRED when type is "choice", omit for textarea.
+- "placeholder" is optional, used only for textarea.
+- Do NOT use "fill_blank" or "text" types.
 
 Question design rules:
-- Calibrate complexity to the stated level:
-    beginner  → simple concept familiarity, basic terminology
+- Calibrate complexity to BOTH age range AND stated level:
+    age under_13 or 13_17 → very simple language, concrete familiar examples
+    age 18_24 through 45_64 → standard complexity for the stated level
+    age 65_plus → clear, respectful; slightly more context when needed
+    beginner → concept familiarity, basic terminology
     intermediate → mechanisms, relationships between ideas
     advanced → edge cases, nuance, application
-- Always include AT LEAST:
-    1 "choice" question probing concept familiarity
-    1 "fill_blank" question testing a key term or relationship
-    1 "textarea" asking what they already know about the subject
-    1 "textarea" asking what specific questions or goals they have
-    1 "textarea" asking whether this ties into a larger project or plan
+- Prefer "choice" for every question when possible.
+- Include at least 2 "choice" questions about the SUBJECT — familiarity, use cases, or understanding.
+- Tailor choice questions to learningFocus when provided (e.g. focus "practical" → integration/setup questions).
+- If learningGoals is non-empty: generate ONLY 2 "choice" questions — do NOT include a textarea
+  (goals are already captured; do not ask again).
+- If learningGoals is empty: include at most ONE "textarea" (skippable) as the last question — what they
+  want to learn or accomplish with THIS SUBJECT.
+- Do NOT use fill-in-the-blank questions.
+- Do NOT repeat what the universal questions already asked (age range, level, motivation).
+- Do NOT ask about the genre or story style under any circumstances.
 - Keep questions warm, non-intimidating, and concise.
 - Do NOT teach or explain — only probe.
-- Do NOT repeat what the universal questions already asked (level, motivation).
-- Use IDs like "ai_1", "ai_2", etc.
-- Order from easiest/warmest to most specific.`.trim();
+- Use IDs "ai_1", "ai_2", "ai_3".
+- Order from easiest/warmest to most specific.
+
+Good example (subject=printify, genre=fantasy):
+  "Have you used Printify before, or is this your first time hearing about it?"
+Bad example (NEVER generate this):
+  "Which element is most important in a fantasy world?"`.trim();
 
 // Legacy prompt (kept for backward-compat /api/generate endpoint)
 const legacySystemPrompt = `
@@ -245,7 +301,7 @@ async function callOpenAI(req, route, { systemPrompt, userPayload, maxTokens, te
 
 app.post('/api/intake', async (req, res) => {
   try {
-    const { subject, genre, age, level, motivation } = req.body || {};
+    const { subject, genre, age, level, motivation, learningGoals, learningFocus } = req.body || {};
     if (!subject) {
       return res.status(400).json({ error: 'Missing required field: subject' });
     }
@@ -255,15 +311,18 @@ app.post('/api/intake', async (req, res) => {
       userPayload: {
         subject,
         genre: genre || 'adventure',
+        genreNote: 'Story genre only — do NOT ask quiz questions about genre or storytelling.',
         age: age || 'unknown',
         level: level || 'beginner',
         motivation: motivation || 'curious',
+        learningFocus: learningFocus || 'general',
+        learningGoals: learningGoals || '',
       },
-      maxTokens: 700,
+      maxTokens: 500,
       temperature: 0.6,
     });
 
-    return res.json(parsed);
+    return res.json(normalizeIntakeResponse(parsed, { subject, learningGoals }));
   } catch (err) {
     console.error('Intake generation error:', err);
     res.status(err.status || 500).json({ error: err.message || 'Intake generation failed' });
@@ -276,14 +335,25 @@ app.post('/api/intake', async (req, res) => {
 
 app.post('/api/scaffold', async (req, res) => {
   try {
-    const { subject, genre, mode, level, answers } = req.body || {};
+    const { subject, genre, mode, level, age, motivation, learningGoals, learningFocus, answers } =
+      req.body || {};
     if (!subject || !genre || !mode) {
       return res.status(400).json({ error: 'Missing required fields: subject, genre, mode' });
     }
 
     const parsed = await callOpenAI(req, 'scaffold', {
       systemPrompt: scaffoldSystemPrompt,
-      userPayload: { subject, genre, mode, level: level || 'beginner', answers: answers || [] },
+      userPayload: {
+        subject,
+        genre,
+        mode,
+        level: level || 'beginner',
+        age: age || 'unknown',
+        motivation: motivation || 'curious',
+        learningFocus: learningFocus || 'general',
+        learningGoals: learningGoals || '',
+        answers: answers || [],
+      },
       maxTokens: 1500,
       temperature: 0.5,
     });
@@ -316,25 +386,37 @@ app.post('/api/beat', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: scaffold, currentBeat' });
     }
 
-    const parsed = normalizeBeatResponse(await callOpenAI(req, 'beat', {
+    const beatPayload = {
+      scaffold,
+      currentBeat,
+      learnerProfile: learnerProfile || {},
+      storySoFar: storySoFar || [],
+      genre: genre || scaffold.theme?.genre,
+      mode: mode || scaffold.theme?.mode,
+      beatIndex: Number.isFinite(beatIndex) ? beatIndex : 0,
+      totalBeats: Number.isFinite(totalBeats) ? totalBeats : scaffold?.beats?.length ?? 0,
+      previousNarrativeOpening:
+        typeof previousNarrativeOpening === 'string' && previousNarrativeOpening.trim()
+          ? previousNarrativeOpening.trim().slice(0, 600)
+          : null,
+    };
+
+    let parsed = normalizeBeatResponse(await callOpenAI(req, 'beat', {
       systemPrompt: beatSystemPrompt,
-      userPayload: {
-        scaffold,
-        currentBeat,
-        learnerProfile: learnerProfile || {},
-        storySoFar: storySoFar || [],
-        genre: genre || scaffold.theme?.genre,
-        mode: mode || scaffold.theme?.mode,
-        beatIndex: Number.isFinite(beatIndex) ? beatIndex : 0,
-        totalBeats: Number.isFinite(totalBeats) ? totalBeats : scaffold?.beats?.length ?? 0,
-        previousNarrativeOpening:
-          typeof previousNarrativeOpening === 'string' && previousNarrativeOpening.trim()
-            ? previousNarrativeOpening.trim().slice(0, 600)
-            : null,
-      },
+      userPayload: beatPayload,
       maxTokens: 1200,
       temperature: 0.78,
     }));
+
+    if (!checkpointOptionsValid(parsed?.checkpoint)) {
+      console.warn('[spellpath] beat checkpoint options invalid; retrying once…');
+      parsed = normalizeBeatResponse(await callOpenAI(req, 'beat', {
+        systemPrompt: beatSystemPrompt,
+        userPayload: beatPayload,
+        maxTokens: 1200,
+        temperature: 0.65,
+      }));
+    }
 
     return res.json(parsed);
   } catch (err) {

@@ -35,15 +35,36 @@ export const useStory = () => {
   }, [engine]);
 
   // Called after intake quiz completes — generates the scaffold then loads beat 0
-  const initScaffold = useCallback(async ({ subject, genre, mode, level, answers }) => {
+  const initScaffold = useCallback(async ({
+    subject,
+    genre,
+    mode,
+    level,
+    age,
+    motivation,
+    learningGoals,
+    learningFocus,
+    answers,
+  }) => {
     setError(null);
     setIsLoading(true);
     engine.setPhase(STORY_PHASES.SCAFFOLD);
     engine.setLevel(level || 'beginner');
+    engine.setLearnerContext({ age, motivation, learningGoals, learningFocus });
     syncState();
 
     try {
-      const scaffoldData = await generateScaffold({ subject, genre, mode, level, answers });
+      const scaffoldData = await generateScaffold({
+        subject,
+        genre,
+        mode,
+        level,
+        age,
+        motivation,
+        learningGoals,
+        learningFocus,
+        answers,
+      });
       engine.initFromScaffold(scaffoldData);
       setScaffold(scaffoldData);
       syncState();
