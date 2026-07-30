@@ -244,9 +244,13 @@ function App() {
       learningGoals: learningGoals.trim(),
       learningFocus: learningFocus || 'general',
       answers,
-    }).then(() => {
-      setUiPhase('story');
-    });
+    })
+      .then(() => {
+        setUiPhase('story');
+      })
+      .catch(() => {
+        // error state lives on useStory; stay on scaffolding screen
+      });
   };
 
   const handleCheckpointAnswer = ({ selectedIndex, correct }) => {
@@ -495,10 +499,42 @@ function App() {
               <Toolbar onOpenSettings={() => setShowSettings(true)} />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
-              <h2 className="text-2xl font-bold genre-title">Building Your Path</h2>
-              <p className="ui-subtitle">
-                Crafting a personalized learning journey for <span className="font-medium">{subject}</span>...
-              </p>
+              {error && !isLoading ? (
+                <>
+                  <h2 className="text-2xl font-bold genre-title">Couldn&apos;t Build Your Path</h2>
+                  <p className="ui-subtitle text-left" style={{ color: 'var(--color-accent)' }}>
+                    {error}
+                  </p>
+                  <p className="text-sm opacity-80 text-left">
+                    Check that <code className="text-xs">npm run api</code> is running, your active
+                    provider key in Settings is valid, and try again.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => finishQuiz(userAnswers)}
+                      className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg"
+                    >
+                      Try again
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUiPhase('input')}
+                      className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg opacity-90"
+                    >
+                      Back to start
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <h2 className="text-2xl font-bold genre-title">Building Your Path</h2>
+                  <p className="ui-subtitle">
+                    Crafting a personalized learning journey for{' '}
+                    <span className="font-medium">{subject}</span>...
+                  </p>
+                </>
+              )}
             </div>
           </div>
         </main>

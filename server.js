@@ -1,19 +1,24 @@
 import express from 'express';
 import dotenv from 'dotenv';
-import { resolveOpenAIForRequest, SPELLPATH_BYOK_HEADER } from './server/lib/aiProvider.js';
+import {
+  SPELLPATH_API_KEY_HEADER,
+  SPELLPATH_BYOK_HEADER,
+  SPELLPATH_PROVIDER_HEADER,
+  getPlatformKeyStatus,
+} from './server/lib/aiProvider.js';
+import { callLLM } from './server/lib/llm/callLLM.js';
+import { DEFAULT_MODELS } from './server/lib/llm/providers.js';
 import { normalizeBeatResponse, checkpointOptionsValid } from './server/lib/normalizeBeat.js';
-import { parseModelJson } from './server/lib/parseModelJson.js';
 import { normalizeIntakeResponse } from './server/lib/normalizeIntake.js';
-import { recordOpenAIUsage } from './server/lib/usageMeter.js';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 4000;
 
-const platformKeyPresent = !!String(process.env.OPENAI_API_KEY || '').trim();
-console.log('Platform OPENAI_API_KEY present:', platformKeyPresent);
-console.log('BYOK header allowed:', process.env.SPELLPATH_ALLOW_BYOK !== 'false');
+const platformKeys = getPlatformKeyStatus();
+console.log('Platform keys configured:', platformKeys);
+console.log('BYOK allowed:', process.env.SPELLPATH_ALLOW_BYOK !== 'false');
 
 app.use(express.json());
 
@@ -21,7 +26,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
-    `Origin, X-Requested-With, Content-Type, Accept, ${SPELLPATH_BYOK_HEADER}`
+    `Origin, X-Requested-With, Content-Type, Accept, ${SPELLPATH_PROVIDER_HEADER}, ${SPELLPATH_API_KEY_HEADER}, ${SPELLPATH_BYOK_HEADER}`,
   );
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
@@ -244,59 +249,7 @@ Return ONLY JSON that matches this schema:
 Tone and imagery should match the genre and mode (day/night). Keep content safe and concise.`.trim();
 
 // ---------------------------------------------------------------------------
-// Helper
-// ---------------------------------------------------------------------------
-
-async function callOpenAI(req, route, { systemPrompt, userPayload, maxTokens, temperature }) {
-  const { client, billingSource, error } = resolveOpenAIForRequest(req);
-  if (!client || !billingSource) {
-    throw Object.assign(new Error(error || 'OpenAI is not configured.'), { status: 500 });
-  }
-
-  const userJson = JSON.stringify(userPayload);
-  const request = {
-    model: 'gpt-4o-mini',
-    response_format: { type: 'json_object' },
-    temperature,
-    max_tokens: maxTokens,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userJson },
-    ],
-  };
-
-  let lastParseError;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    const completion = await client.chat.completions.create(request);
-    const choice = completion.choices[0] || {};
-    const finishReason = choice.finish_reason || null;
-
-    const usage = completion.usage || {};
-    recordOpenAIUsage({
-      route,
-      billingSource,
-      promptTokens: usage.prompt_tokens,
-      completionTokens: usage.completion_tokens,
-      totalTokens: usage.total_tokens,
-    });
-
-    try {
-      return parseModelJson(choice.message?.content, { route, finishReason });
-    } catch (err) {
-      lastParseError = err;
-      if (finishReason === 'length') {
-        console.warn(`[spellpath] ${route} response truncated (attempt ${attempt + 1}); retrying…`);
-      } else if (attempt === 0) {
-        console.warn(`[spellpath] ${route} JSON parse failed (attempt 1); retrying…`);
-      }
-    }
-  }
-
-  throw lastParseError || new Error('Failed to parse model response');
-}
-
-// ---------------------------------------------------------------------------
-// POST /api/intake
+// Routes
 // ---------------------------------------------------------------------------
 
 app.post('/api/intake', async (req, res) => {
@@ -306,7 +259,7 @@ app.post('/api/intake', async (req, res) => {
       return res.status(400).json({ error: 'Missing required field: subject' });
     }
 
-    const parsed = await callOpenAI(req, 'intake', {
+    const parsed = await callLLM(req, 'intake', {
       systemPrompt: intakeSystemPrompt,
       userPayload: {
         subject,
@@ -341,7 +294,7 @@ app.post('/api/scaffold', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields: subject, genre, mode' });
     }
 
-    const parsed = await callOpenAI(req, 'scaffold', {
+    const parsed = await callLLM(req, 'scaffold', {
       systemPrompt: scaffoldSystemPrompt,
       userPayload: {
         subject,
@@ -401,7 +354,7 @@ app.post('/api/beat', async (req, res) => {
           : null,
     };
 
-    let parsed = normalizeBeatResponse(await callOpenAI(req, 'beat', {
+    let parsed = normalizeBeatResponse(await callLLM(req, 'beat', {
       systemPrompt: beatSystemPrompt,
       userPayload: beatPayload,
       maxTokens: 1200,
@@ -410,7 +363,7 @@ app.post('/api/beat', async (req, res) => {
 
     if (!checkpointOptionsValid(parsed?.checkpoint)) {
       console.warn('[spellpath] beat checkpoint options invalid; retrying once…');
-      parsed = normalizeBeatResponse(await callOpenAI(req, 'beat', {
+      parsed = normalizeBeatResponse(await callLLM(req, 'beat', {
         systemPrompt: beatSystemPrompt,
         userPayload: beatPayload,
         maxTokens: 1200,
@@ -441,7 +394,7 @@ app.post('/api/generate', async (req, res) => {
       answers?.[0]?.answer ||
       'beginner';
 
-    const parsed = await callOpenAI(req, 'generate', {
+    const parsed = await callLLM(req, 'generate', {
       systemPrompt: legacySystemPrompt,
       userPayload: { subject, genre, mode, level, answers: answers || [] },
       maxTokens: 500,
@@ -457,13 +410,19 @@ app.post('/api/generate', async (req, res) => {
 
 // ---------------------------------------------------------------------------
 
-app.get('/api/health', (_req, res) =>
-  res.json({
+app.get('/api/health', (_req, res) => {
+  const keys = getPlatformKeyStatus();
+  return res.json({
     ok: true,
-    platformKeyConfigured: platformKeyPresent,
     byokAllowed: process.env.SPELLPATH_ALLOW_BYOK !== 'false',
-  })
-);
+    platformKeyConfigured: keys.openai,
+    providers: {
+      openai: { platformKeyConfigured: keys.openai, defaultModel: DEFAULT_MODELS.openai },
+      anthropic: { platformKeyConfigured: keys.anthropic, defaultModel: DEFAULT_MODELS.anthropic },
+      gemini: { platformKeyConfigured: keys.gemini, defaultModel: DEFAULT_MODELS.gemini },
+    },
+  });
+});
 
 app.listen(port, () => {
   console.log(`SpellPath API running on http://localhost:${port}`);

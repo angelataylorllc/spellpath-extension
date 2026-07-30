@@ -1,68 +1,75 @@
 # AI billing: platform (A) + optional BYOK (C)
 
-SpellPath can use **your server’s OpenAI key** (paid product / your quota) or **the user’s key** (BYOK — bill hits their OpenAI account). The code is structured so you can start with **A** and add **C** without a rewrite.
+SpellPath supports **OpenAI**, **Anthropic (Claude)**, and **Google Gemini**.
+
+Each provider can use:
+- **Platform key** — your server `.env` (you pay, meter & cap for a paid product)
+- **BYOK** — user's key from extension Settings (they pay)
 
 ## How routing works
 
-| Mode | When | Who pays OpenAI |
-|------|------|------------------|
-| **Platform** | Request has no `X-SpellPath-OpenAI-Key` and `OPENAI_API_KEY` is set on the server | You (meter & cap this) |
-| **BYOK** | Request includes `X-SpellPath-OpenAI-Key` and `SPELLPATH_ALLOW_BYOK` is not disabled | End user |
+| Mode | When | Who pays |
+|------|------|----------|
+| **Platform** | No BYOK key in Settings; server has platform key for selected provider | You |
+| **BYOK** | User saved provider + key in Settings | End user |
 
-Resolution lives in `server/lib/aiProvider.js` (`resolveOpenAIForRequest`).
+Resolution: `server/lib/llm/resolveProvider.js` (`resolveLLMForRequest`).
 
-**Precedence:** If BYOK is allowed and `X-SpellPath-OpenAI-Key` is non-empty, that key is used (even when a platform key exists). Otherwise the platform key is used.
+**Precedence:** If BYOK is allowed and `X-SpellPath-Api-Key` is set, that key is used for `X-SpellPath-Provider` (default `openai`). Legacy header `X-SpellPath-OpenAI-Key` still works for OpenAI-only clients.
 
 ## Server environment
 
 | Variable | Purpose |
 |----------|---------|
-| `OPENAI_API_KEY` | Platform key (mode A). Required for requests that do not send BYOK. |
-| `SPELLPATH_ALLOW_BYOK` | Default `true`. Set to `false` or `0` on a locked-down deploy to **ignore** BYOK headers (platform only). |
-| `SPELLPATH_USAGE_LOG` | Set to `1` / `true` to log structured usage lines (route + `billingSource` + token counts). No payloads or keys logged. |
+| `OPENAI_API_KEY` | Platform OpenAI key |
+| `ANTHROPIC_API_KEY` | Platform Anthropic key |
+| `GEMINI_API_KEY` or `GOOGLE_API_KEY` | Platform Gemini key |
+| `SPELLPATH_ALLOW_BYOK` | Default `true`. Set `false` for platform-only hosting. |
+| `SPELLPATH_USAGE_LOG` | Set `1` / `true` to log usage (route, provider, model, tokens). |
 
-## Metering (future quotas)
+## Default models
 
-`server/lib/usageMeter.js` → `recordOpenAIUsage()` runs after each successful completion. It receives:
+| Provider | Default alias | Notes |
+|----------|---------------|-------|
+| OpenAI | `gpt-4o-mini` | Product name; stable across minor updates |
+| Anthropic | `claude-haiku-4-5` | **Alias** (no date) — Anthropic updates the snapshot it points to |
+| Gemini | `gemini-2.0-flash` | Google model id |
 
-- `route`: `intake` | `scaffold` | `beat` | `generate`
-- `billingSource`: `platform` | `byok`
-- `promptTokens`, `completionTokens`, `totalTokens` (from the API when available)
+### Model selection strategy
 
-**Next steps for a paid service:** for `billingSource === 'platform'`, attach user/session id (auth), persist totals, enforce plan limits before calling OpenAI, and integrate billing. BYOK calls can skip your quota or use a lighter “software only” tier.
+Providers do **not** offer a single "always latest" endpoint — you pick a **tier** (Haiku / mini / flash = fast & cheap). Within that tier:
+
+- **Use aliases** like `claude-haiku-4-5`, not dated snapshots like `claude-3-5-haiku-20241022`. Dated ids get retired and cause 404s.
+- **Env override** — set `SPELLPATH_ANTHROPIC_MODEL` (or `_OPENAI_` / `_GEMINI_`) in `.env` to pin or switch without code changes.
+- **Anthropic fallback** — if the primary alias 404s, the server tries the next alias in `ANTHROPIC_MODEL_FALLBACKS` automatically.
+
+When Anthropic renames a tier (e.g. 3.5 Haiku → 4.5 Haiku), update the alias in `server/lib/llm/providers.js` once — or set `SPELLPATH_ANTHROPIC_MODEL` locally until we ship an update.
 
 ## Extension (BYOK)
 
-- Optional key is read from `chrome.storage.local` under `spellpath_user_openai_key`.
-- `src/services/apiCredentials.js` — `getOptionalUserOpenAIKey`, `setUserOpenAIKey`, `clearUserOpenAIKey`.
-- `src/services/contentApi.js` sends `X-SpellPath-OpenAI-Key` on every API POST when a key is stored.
-- `extension/manifest.json` includes the `storage` permission.
+- Credentials stored in `chrome.storage.local` as `spellpath_llm_credentials`:
+  ```json
+  { "activeProvider": "anthropic", "keys": { "openai": "sk-…", "anthropic": "sk-ant-…" } }
+  ```
+  One key per provider; switch **active provider** in Settings to choose which runs stories.
+- Legacy single-key format is migrated automatically on read.
+- `src/services/apiCredentials.js` — get/set/clear credentials.
+- `src/services/contentApi.js` sends `X-SpellPath-Provider` + `X-SpellPath-Api-Key` on every API POST when configured.
+- **Settings** UI — pick provider, paste key, Save.
 
-There is **no Options UI yet**; you can set the key from the extension console for testing:
+## Architecture
 
-```js
-chrome.storage.local.set({ spellpath_user_openai_key: 'sk-...' });
+```
+Extension → POST /api/* → callLLM() → provider adapter → parseModelJson → normalize*
 ```
 
-Remove BYOK for testing platform mode:
-
-```js
-chrome.storage.local.remove('spellpath_user_openai_key');
-```
-
-## CORS
-
-The API allows the BYOK header in `Access-Control-Allow-Headers` so browser/extension `fetch` preflights succeed.
+Adapters: `server/lib/llm/adapters/{openai,anthropic,gemini}.js`
 
 ## Health check
 
-`GET /api/health` returns:
-
-- `platformKeyConfigured` — boolean
-- `byokAllowed` — reflects `SPELLPATH_ALLOW_BYOK`
+`GET /api/health` returns `providers.openai|anthropic|gemini` with `platformKeyConfigured` and `defaultModel`.
 
 ## Security notes
 
-- **HTTPS in production** for any traffic carrying `X-SpellPath-OpenAI-Key`.
+- **HTTPS in production** for any traffic carrying API keys in headers.
 - Never log header values or store platform keys in the extension.
-- Rotating a leaked user key is the user’s responsibility; rotating your platform key is yours.

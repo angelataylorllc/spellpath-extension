@@ -1,19 +1,51 @@
-import { getOptionalUserOpenAIKey } from './apiCredentials';
+import {
+  DEFAULT_MODELS,
+  getLLMCredentials,
+  PROVIDER_KEY_HINTS,
+  PROVIDER_LABELS,
+  LLM_PROVIDERS,
+} from './apiCredentials';
 import { normalizeQuotes } from '../../lib/normalizeQuotes.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
-/** Must match server `SPELLPATH_BYOK_HEADER` (case-insensitive over HTTP). */
-const SPELLPATH_BYOK_HEADER = 'X-SpellPath-OpenAI-Key';
+const SPELLPATH_PROVIDER_HEADER = 'X-SpellPath-Provider';
+const SPELLPATH_API_KEY_HEADER = 'X-SpellPath-Api-Key';
+const SPELLPATH_OPENAI_BYOK_HEADER = 'X-SpellPath-OpenAI-Key';
+
+async function parseApiError(response) {
+  const errorText = await response.text();
+  try {
+    const parsed = JSON.parse(errorText);
+    if (parsed?.error) return parsed.error;
+  } catch {
+    // not JSON
+  }
+  return errorText || `Request failed (${response.status})`;
+}
+
+function wrapFetchError(err) {
+  if (err instanceof TypeError || /failed to fetch|networkerror/i.test(String(err?.message || ''))) {
+    return new Error(
+      'Cannot reach SpellPath API. Run npm run api (port 4000), then reload the extension.',
+    );
+  }
+  return err;
+}
 
 /**
- * POST to SpellPath API; attaches optional BYOK key from chrome.storage.local.
+ * POST to SpellPath API; attaches active BYOK provider + key from chrome.storage.local.
  */
 async function spellpathPost(path, body) {
   const headers = new Headers({ 'Content-Type': 'application/json' });
-  const userKey = await getOptionalUserOpenAIKey().catch(() => undefined);
-  if (userKey) {
-    headers.set(SPELLPATH_BYOK_HEADER, userKey);
+  const creds = await getLLMCredentials().catch(() => undefined);
+
+  if (creds?.apiKey) {
+    headers.set(SPELLPATH_PROVIDER_HEADER, creds.provider);
+    headers.set(SPELLPATH_API_KEY_HEADER, creds.apiKey);
+    if (creds.provider === 'openai') {
+      headers.set(SPELLPATH_OPENAI_BYOK_HEADER, creds.apiKey);
+    }
   }
 
   return fetch(`${API_BASE}${path}`, {
@@ -23,77 +55,11 @@ async function spellpathPost(path, body) {
   });
 }
 
+export { LLM_PROVIDERS, PROVIDER_LABELS, DEFAULT_MODELS, PROVIDER_KEY_HINTS };
+
 // ---------------------------------------------------------------------------
-// Mock fallbacks (used when the backend is unreachable)
+// Mock fallbacks — intake only (when API unreachable); never used for story beats
 // ---------------------------------------------------------------------------
-
-function mockScaffold({ subject, genre, mode, level }) {
-  return {
-    subject,
-    theme: { genre, mode },
-    beats: [
-      {
-        id: 'beat_1',
-        title: 'The Hook',
-        concept: `Core idea behind ${subject}`,
-        narrativeHint: `Open on a vivid ${genre} location; something small feels wrong or promising — no lecture.`,
-        checkpointFocus: `Learner recognizes the main idea behind ${subject}`,
-        flexibility: 'rigid',
-      },
-      {
-        id: 'beat_2',
-        title: 'Deeper Look',
-        concept: `Key mechanism of ${subject}`,
-        narrativeHint: `Raise the stakes with an obstacle that only makes sense through the mechanism.`,
-        checkpointFocus: `Learner explains how the mechanism fits together`,
-        flexibility: 'rigid',
-      },
-      {
-        id: 'beat_3',
-        title: 'Apply It',
-        concept: `Practical application of ${subject}`,
-        narrativeHint: `Force a choice in-scene that demands using the idea under pressure.`,
-        checkpointFocus: `Learner applies ${subject} in a concrete scenario`,
-        flexibility: 'soft',
-      },
-    ],
-    estimatedBeats: 3,
-    difficultyArc: `${level} -> ${level === 'advanced' ? 'advanced' : 'intermediate'}`,
-  };
-}
-
-function mockBeat({ currentBeat, learnerProfile }) {
-  const concept = currentBeat?.concept || 'this idea';
-  const level = learnerProfile?.level || 'beginner';
-
-  return {
-    narrative:
-      `Metal rungs bite your palms; the climb smells of rust and river silt. Somewhere below, a ferry horn ` +
-      `answers a question nobody asked.\n\n` +
-      `"You're counting wrong," a voice says from the dark. A match flares — a kid with ink on their ` +
-      `cheeks, too calm. "Three beats, not two." You don't know what they mean yet, but your chest ` +
-      `tightens anyway.\n\n` +
-      `"Show me the pattern," you say. They laugh. "Pattern's not in the numbers. It's in what you ` +
-      `ignore when you're afraid." The match dies; ember-trails drift like lazy punctuation.\n\n` +
-      `"Listen," they whisper. "The water doesn't repeat. It rhymes." Footsteps echo on the span above — ` +
-      `someone else hunting the same edge you are.\n\n` +
-      `The kid taps the rail twice. "So — what are you actually trading? The stone, or the story you` +
-      ` tell about the stone?" Wind pulls at your sleeves; the question lands like a weight on a scale.`,
-    checkpoint: {
-      question: `What are you really weighing in this moment?`,
-      options: [
-        { label: `The object in the open`, correct: false },
-        { label: `The rule beneath what you see`, correct: true },
-        { label: `Whatever lets you leave fastest`, correct: false },
-      ],
-      feedbackCorrect: `The scene keeps pointing at the underlying rule, not the surface detail.`,
-      feedbackIncorrect: `The visible object is a distraction — the beat is testing the deeper pattern behind it.`,
-      hint: `What would change if the root cause were different?`,
-    },
-    beatSummary: `Scene beat on ${concept} (${level}); checkpoint tests grasp of core idea.`,
-    scaffoldAdjustment: null,
-  };
-}
 
 function mockIntakeQuestions({ subject, learningGoals }) {
   const skipGoalsTextarea = Boolean(String(learningGoals || '').trim());
@@ -145,8 +111,7 @@ export async function generateIntakeQuestions(payload) {
     const response = await spellpathPost('/api/intake', payload);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Failed to generate intake questions');
+      throw new Error(await parseApiError(response));
     }
 
     return await response.json();
@@ -161,14 +126,12 @@ export async function generateScaffold(payload) {
     const response = await spellpathPost('/api/scaffold', payload);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Failed to generate scaffold');
+      throw new Error(await parseApiError(response));
     }
 
     return await response.json();
   } catch (err) {
-    console.error('Scaffold generation failed, falling back to mock:', err);
-    return mockScaffold(payload);
+    throw wrapFetchError(err);
   }
 }
 
@@ -177,13 +140,11 @@ export async function generateBeat(payload) {
     const response = await spellpathPost('/api/beat', payload);
 
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(errorText || 'Failed to generate beat');
+      throw new Error(await parseApiError(response));
     }
 
     return normalizeBeatClient(await response.json());
   } catch (err) {
-    console.error('Beat generation failed, falling back to mock:', err);
-    return normalizeBeatClient(mockBeat(payload));
+    throw wrapFetchError(err);
   }
 }

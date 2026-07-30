@@ -86,9 +86,11 @@ export const useStory = () => {
       engine.setPhase(STORY_PHASES.NARRATION);
       syncState();
     } catch (err) {
-      setError(err?.message || 'Failed to generate scaffold');
+      const message = err?.message || 'Failed to generate story';
+      setError(message);
       engine.setPhase(STORY_PHASES.INTAKE);
       syncState();
+      throw err;
     } finally {
       setIsLoading(false);
     }

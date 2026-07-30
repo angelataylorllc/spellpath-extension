@@ -1,64 +1,100 @@
 import { useEffect, useState } from 'react';
 import {
-  clearUserOpenAIKey,
-  getOptionalUserOpenAIKey,
-  setUserOpenAIKey,
+  clearProviderKey,
+  DEFAULT_MODELS,
+  getLLMKeyStatus,
+  LLM_PROVIDERS,
+  PROVIDER_KEY_HINTS,
+  PROVIDER_LABELS,
+  setActiveLLMProvider,
+  setLLMCredentials,
 } from '../services/apiCredentials';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
 export const Settings = ({ onClose }) => {
-  const [openAiKey, setOpenAiKey] = useState('');
-  const [hasStoredKey, setHasStoredKey] = useState(false);
-  const [platformKeyConfigured, setPlatformKeyConfigured] = useState(null);
+  const [provider, setProvider] = useState('openai');
+  const [saved, setSaved] = useState({ openai: false, anthropic: false, gemini: false });
+  const [apiKey, setApiKey] = useState('');
+  const [platformStatus, setPlatformStatus] = useState(null);
   const [status, setStatus] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const refreshKeyStatus = async () => {
+    const keyStatus = await getLLMKeyStatus().catch(() => null);
+    if (keyStatus) {
+      setProvider(keyStatus.activeProvider);
+      setSaved(keyStatus.saved);
+    }
+  };
+
   useEffect(() => {
-    getOptionalUserOpenAIKey()
-      .then(key => setHasStoredKey(Boolean(key)))
-      .catch(() => setHasStoredKey(false));
+    refreshKeyStatus();
 
     fetch(`${API_BASE}/api/health`)
       .then(res => (res.ok ? res.json() : null))
-      .then(data => setPlatformKeyConfigured(Boolean(data?.platformKeyConfigured)))
-      .catch(() => setPlatformKeyConfigured(null));
+      .then(data => setPlatformStatus(data?.providers || null))
+      .catch(() => setPlatformStatus(null));
   }, []);
 
-  const handleSaveKey = async () => {
+  const handleProviderChange = async (nextProvider) => {
+    setProvider(nextProvider);
+    setApiKey('');
+    setStatus('');
+    try {
+      await setActiveLLMProvider(nextProvider);
+    } catch (err) {
+      setStatus(err?.message || 'Could not switch provider.');
+    }
+  };
+
+  const handleSave = async () => {
+    if (!apiKey.trim()) {
+      setStatus('Paste an API key first, or use Remove to delete a saved key.');
+      return;
+    }
+
     setBusy(true);
     setStatus('');
     try {
-      await setUserOpenAIKey(openAiKey);
-      setHasStoredKey(Boolean(openAiKey.trim()));
-      setOpenAiKey('');
-      setStatus(openAiKey.trim() ? 'Your OpenAI key is saved in this browser.' : 'Key cleared.');
+      await setLLMCredentials({ provider, apiKey, setActive: true });
+      await refreshKeyStatus();
+      setApiKey('');
+      setStatus(`${PROVIDER_LABELS[provider]} key saved.`);
     } catch (err) {
-      setStatus(err?.message || 'Could not save key.');
+      setStatus(err?.message || 'Could not save credentials.');
     } finally {
       setBusy(false);
     }
   };
 
-  const handleClearKey = async () => {
+  const handleRemove = async () => {
     setBusy(true);
     setStatus('');
     try {
-      await clearUserOpenAIKey();
-      setHasStoredKey(false);
-      setOpenAiKey('');
-      setStatus('Your key was removed. Requests will use the server key if available.');
+      await clearProviderKey(provider);
+      await refreshKeyStatus();
+      setApiKey('');
+      setStatus(`${PROVIDER_LABELS[provider]} key removed.`);
     } catch (err) {
-      setStatus(err?.message || 'Could not clear key.');
+      setStatus(err?.message || 'Could not remove key.');
     } finally {
       setBusy(false);
     }
   };
+
+  const serverLine = (id) => {
+    const info = platformStatus?.[id];
+    if (!info) return 'unknown';
+    return info.platformKeyConfigured ? 'server key set' : 'no server key';
+  };
+
+  const currentSaved = saved[provider];
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div
-        className="rounded-xl shadow-2xl max-w-md w-full p-6 space-y-6 border"
+        className="rounded-xl shadow-2xl max-w-md w-full p-6 space-y-6 border max-h-[90vh] overflow-y-auto"
         style={{
           background: 'color-mix(in srgb, var(--color-bg-alt) 82%, var(--color-bg) 18%)',
           borderColor: 'var(--color-accent-soft)',
@@ -84,48 +120,87 @@ export const Settings = ({ onClose }) => {
         <div className="space-y-4 text-left" style={{ color: 'var(--color-text)' }}>
           <div className="space-y-2">
             <p className="text-sm font-medium" style={{ color: 'var(--color-accent)' }}>
-              AI provider
+              AI provider (BYOK)
             </p>
             <p className="text-sm opacity-80">
-              SpellPath currently uses <strong>OpenAI</strong> (gpt-4o-mini). If the server key is
-              out of quota, add your own OpenAI key here — usage bills to your account.
+              Save a key for each provider you use. Pick which one is <strong>active</strong> —
+              that provider runs your stories. Usage bills to your account.
             </p>
+
+            <div
+              className="rounded-lg border p-3 space-y-1.5 text-sm"
+              style={{ borderColor: 'var(--color-accent-soft)' }}
+            >
+              <p className="text-xs font-medium opacity-70 mb-1">Your saved keys</p>
+              {LLM_PROVIDERS.map(id => (
+                <div key={id} className="flex items-center justify-between gap-2">
+                  <span className={id === provider ? 'font-medium' : ''}>
+                    {PROVIDER_LABELS[id]}
+                    {id === provider && (
+                      <span className="text-xs opacity-70 ml-1">(active)</span>
+                    )}
+                  </span>
+                  <span
+                    className="text-xs shrink-0"
+                    style={{ color: saved[id] ? 'var(--color-accent)' : 'var(--color-text-muted)' }}
+                  >
+                    {saved[id] ? '✓ key saved' : '— no key'}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <label className="ui-label" htmlFor="llm-provider">
+              Active provider
+            </label>
+            <select
+              id="llm-provider"
+              value={provider}
+              onChange={(e) => handleProviderChange(e.target.value)}
+              className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none"
+              disabled={busy}
+            >
+              {LLM_PROVIDERS.map(id => (
+                <option key={id} value={id}>
+                  {PROVIDER_LABELS[id]} ({DEFAULT_MODELS[id]})
+                  {saved[id] ? ' ✓' : ''}
+                </option>
+              ))}
+            </select>
+
             <p className="text-xs opacity-70">
-              Server key:{' '}
-              {platformKeyConfigured === null
-                ? 'unknown (is npm run api running?)'
-                : platformKeyConfigured
-                  ? 'configured'
-                  : 'not configured'}
-              {' · '}
-              Your key: {hasStoredKey ? 'saved' : 'not set'}
+              Server fallback for {PROVIDER_LABELS[provider]}: {serverLine(provider)}
             </p>
-            <label className="ui-label" htmlFor="openai-key">
-              Your OpenAI API key
+
+            <label className="ui-label" htmlFor="llm-api-key">
+              API key for {PROVIDER_LABELS[provider]}
             </label>
             <input
-              id="openai-key"
+              id="llm-api-key"
               type="password"
-              value={openAiKey}
-              onChange={(e) => setOpenAiKey(e.target.value)}
-              placeholder={hasStoredKey ? 'Paste a new key to replace…' : 'sk-…'}
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={
+                currentSaved ? 'Paste a new key to replace…' : PROVIDER_KEY_HINTS[provider]
+              }
               className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none"
               autoComplete="off"
               disabled={busy}
             />
+
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={handleSaveKey}
+                onClick={handleSave}
                 disabled={busy}
                 className="flex-1 genre-button ui-btn py-2 px-4 rounded-lg font-medium"
               >
                 Save key
               </button>
-              {hasStoredKey && (
+              {currentSaved && (
                 <button
                   type="button"
-                  onClick={handleClearKey}
+                  onClick={handleRemove}
                   disabled={busy}
                   className="flex-1 genre-button ui-btn py-2 px-4 rounded-lg font-medium opacity-80"
                 >
@@ -136,10 +211,14 @@ export const Settings = ({ onClose }) => {
             {status && <p className="text-xs opacity-80">{status}</p>}
           </div>
 
-          <p className="text-xs opacity-60 border-t pt-3" style={{ borderColor: 'var(--color-accent-soft)' }}>
-            Support for other providers (Anthropic, Gemini, etc.) is not wired yet — the server would
-            need a provider picker and adapter per API. OpenAI BYOK is available today.
-          </p>
+          <div className="text-xs opacity-60 border-t pt-3 space-y-1" style={{ borderColor: 'var(--color-accent-soft)' }}>
+            <p>Server platform keys (optional in .env):</p>
+            <ul className="list-disc pl-4 space-y-0.5">
+              <li>OpenAI — OPENAI_API_KEY ({serverLine('openai')})</li>
+              <li>Anthropic — ANTHROPIC_API_KEY ({serverLine('anthropic')})</li>
+              <li>Gemini — GEMINI_API_KEY or GOOGLE_API_KEY ({serverLine('gemini')})</li>
+            </ul>
+          </div>
         </div>
 
         <button
