@@ -4,10 +4,13 @@ import '../styles/theme-tokens.css';
 import '../styles/adventure-campfire.css';
 import '../styles/adventure-wind.css';
 import { STORY_GENRES } from '../config/genres';
+import { AUTHOR_EXAMPLES } from '../config/genreVoice';
 import { LEARNING_FOCUS_OPTIONS } from '../config/learningFocus';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
+import { LoginGate } from './LoginGate';
 import Toolbar from './Toolbar';
+import { useAuth } from '../contexts/AuthContext';
 import SceneAtmosphere from './SceneAtmosphere';
 import IntakeQuestion from './IntakeQuestion';
 import StoryBeat from '../stories/StoryBeat';
@@ -18,13 +21,21 @@ import {
   openStoryPdf,
   persistSessionLog,
 } from '../stories/storyExport';
-import { generateIntakeQuestions } from '../services/contentApi';
+import { generateIntakeQuestions, validateTopic } from '../services/contentApi';
+import {
+  validateTopicClient,
+  TOPIC_REJECT_MESSAGE,
+  HERITAGE_ACCEPT_NOTE,
+  NICHE_ACCEPT_NOTE,
+} from '../lib/validateTopicClient';
 
 function App() {
   const { mode, setTheme } = useTheme();
+  const { authEnabled, user, loading: authLoading, error: authError, signIn, signOut } = useAuth();
   const [subject, setSubject] = useState('');
   const [learningGoals, setLearningGoals] = useState('');
   const [learningFocus, setLearningFocus] = useState('');
+  const [authorStyle, setAuthorStyle] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [showSettings, setShowSettings] = useState(false);
 
@@ -33,8 +44,15 @@ function App() {
   const [quizData, setQuizData] = useState(null);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [userAnswers, setUserAnswers] = useState([]);
-  // UI phase: input | quiz | quiz_loading | scaffolding | story | complete
+  // UI phase: input | validating_topic | topic_reject | topic_clarify | quiz | quiz_loading | scaffolding | story | complete
   const [uiPhase, setUiPhase] = useState('input');
+  const [topicCategory, setTopicCategory] = useState('standard');
+  const [topicValidation, setTopicValidation] = useState(null);
+  const [topicAcceptNote, setTopicAcceptNote] = useState(null);
+  const [clarifyAttempts, setClarifyAttempts] = useState(0);
+  const [topicGateError, setTopicGateError] = useState(null);
+  const [authorStyleWarning, setAuthorStyleWarning] = useState(null);
+  const [pendingTopicResult, setPendingTopicResult] = useState(null);
 
   // Story engine hook
   const {
@@ -46,7 +64,9 @@ function App() {
     totalBeats,
     storySoFar,
     isLoading,
+    loadingMessage,
     error,
+    adaptationNotice,
     initScaffold,
     submitCheckpoint,
     continueStory,
@@ -65,6 +85,7 @@ function App() {
       level: learnerProfile?.level,
       learningGoals,
       learningFocus,
+      authorStyle,
       scaffold,
       completedBeats: storySoFar,
       learnerProfile,
@@ -81,6 +102,7 @@ function App() {
       level: learnerProfile?.level,
       learningGoals,
       learningFocus,
+      authorStyle,
       scaffold,
       completedBeats: storySoFar,
       learnerProfile,
@@ -121,18 +143,134 @@ function App() {
 
   const UNIVERSAL_QUESTION_COUNT = 3;
 
-  const handleSubjectSubmit = (e) => {
-    e.preventDefault();
-    if (!subject.trim() || !selectedGenre) return;
-
+  const proceedToQuiz = (topicLabel) => {
+    const label = topicLabel || subject;
     setCurrentQuestion(0);
     setUserAnswers([]);
-    setIsAnalyzing(true);
-
-    const quiz = buildUniversalQuiz(subject, selectedGenre);
+    const quiz = buildUniversalQuiz(label, selectedGenre);
     setQuizData(quiz);
     setUiPhase('quiz');
     setIsAnalyzing(false);
+  };
+
+  const acceptTopicValidation = (result) => {
+    const normalized = result.normalizedSubject?.trim();
+    if (normalized && normalized.toLowerCase() !== subject.trim().toLowerCase()) {
+      setSubject(normalized);
+    }
+
+    setTopicCategory(result.category || 'standard');
+    setTopicValidation(null);
+    setTopicGateError(null);
+    setPendingTopicResult(null);
+    setAuthorStyleWarning(null);
+
+    if (result.category === 'heritage') {
+      setTopicAcceptNote(HERITAGE_ACCEPT_NOTE);
+    } else if (result.category === 'niche') {
+      setTopicAcceptNote(NICHE_ACCEPT_NOTE);
+    } else {
+      setTopicAcceptNote(null);
+    }
+
+    proceedToQuiz(normalized || subject);
+  };
+
+  const maybeAcceptTopicValidation = (result) => {
+    if (
+      authorStyle.trim()
+      && result.authorStyleCheck?.status === 'warn'
+      && result.authorStyleCheck?.reason
+    ) {
+      setPendingTopicResult(result);
+      setAuthorStyleWarning(result.authorStyleCheck);
+      setUiPhase('topic_author_warn');
+      setIsAnalyzing(false);
+      return;
+    }
+
+    acceptTopicValidation(result);
+  };
+
+  const handleSubjectSubmit = async (e) => {
+    e.preventDefault();
+    if (!subject.trim() || !selectedGenre) return;
+
+    setTopicGateError(null);
+    setTopicValidation(null);
+
+    const clientCheck = validateTopicClient(subject);
+    if (!clientCheck.ok) {
+      setTopicValidation({
+        status: 'reject',
+        reason: clientCheck.reason || TOPIC_REJECT_MESSAGE,
+      });
+      setUiPhase('topic_reject');
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setUiPhase('validating_topic');
+
+    try {
+      const result = await validateTopic({
+        subject: subject.trim(),
+        genre: selectedGenre,
+        learningGoals: learningGoals.trim(),
+        learningFocus: learningFocus || '',
+        authorStyle: authorStyle.trim(),
+      });
+
+      if (result.status === 'reject') {
+        setTopicValidation(result);
+        setUiPhase('topic_reject');
+        setIsAnalyzing(false);
+        return;
+      }
+
+      if (result.status === 'clarify' && !learningGoals.trim() && clarifyAttempts < 2) {
+        setTopicValidation(result);
+        setClarifyAttempts(prev => prev + 1);
+        setUiPhase('topic_clarify');
+        setIsAnalyzing(false);
+        return;
+      }
+
+      maybeAcceptTopicValidation(result);
+    } catch (err) {
+      setTopicGateError(
+        err?.message || 'Could not verify this topic right now. Check that npm run api is running.',
+      );
+      setUiPhase('input');
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleClarifyResubmit = (e) => {
+    e.preventDefault();
+    if (!subject.trim()) return;
+
+    const clientCheck = validateTopicClient(subject);
+    if (!clientCheck.ok) {
+      setTopicValidation({
+        status: 'reject',
+        reason: clientCheck.reason || TOPIC_REJECT_MESSAGE,
+      });
+      setUiPhase('topic_reject');
+      return;
+    }
+
+    if (clarifyAttempts >= 2 || learningGoals.trim().length >= 12) {
+      acceptTopicValidation({
+        status: 'accept',
+        category: topicValidation?.category || topicCategory || 'standard',
+        normalizedSubject: subject.trim(),
+        authorStyleCheck: { status: 'skip' },
+      });
+      return;
+    }
+
+    handleSubjectSubmit(e);
   };
 
   const buildUniversalQuiz = (subj, genre) => ({
@@ -243,6 +381,8 @@ function App() {
       motivation,
       learningGoals: learningGoals.trim(),
       learningFocus: learningFocus || 'general',
+      topicCategory,
+      authorStyle: authorStyle.trim(),
       answers,
     })
       .then(() => {
@@ -274,10 +414,41 @@ function App() {
     setCurrentQuestion(0);
     setUserAnswers([]);
     setCheckpointAnswered(false);
+    setTopicCategory('standard');
+    setTopicValidation(null);
+    setTopicAcceptNote(null);
+    setClarifyAttempts(0);
+    setTopicGateError(null);
+    setAuthorStyleWarning(null);
+    setPendingTopicResult(null);
+    setAuthorStyle('');
     setUiPhase('input');
   };
 
   // --- Render helpers ---
+
+  if (authEnabled && authLoading) {
+    return (
+      <main className="scene">
+        <SceneAtmosphere />
+        <div className="scene__content ui-font text-center">
+          <p className="ui-subtitle">Checking sign-in…</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (authEnabled && !user) {
+    return (
+      <LoginGate
+        onSignIn={() => signIn().catch(() => {})}
+        loading={authLoading}
+        error={authError}
+      />
+    );
+  }
+
+  const toolbarAuthProps = authEnabled ? { user, onSignOut: signOut } : {};
 
   const settingsModal = showSettings && <Settings onClose={() => setShowSettings(false)} />;
 
@@ -305,6 +476,7 @@ function App() {
             <div className="mb-4 text-center sm:text-left">
               <Toolbar
                 onOpenSettings={() => setShowSettings(true)}
+                {...toolbarAuthProps}
                 leading={
                   <h1 className="text-[1.6875rem] font-bold tracking-wide genre-title m-0">
                     SpellPath
@@ -393,15 +565,238 @@ function App() {
               </div>
 
               <div className="genre-card p-3.5 rounded-lg border">
+                <label className="ui-label" htmlFor="author-style">
+                  Author voice{' '}
+                  <span className="ui-meta font-normal">(optional)</span>
+                </label>
+                <input
+                  id="author-style"
+                  type="text"
+                  value={authorStyle}
+                  onChange={(e) => setAuthorStyle(e.target.value)}
+                  placeholder={
+                    selectedGenre
+                      ? `e.g. ${AUTHOR_EXAMPLES[selectedGenre]?.split(',')[0] || 'author name'}`
+                      : 'Pick a story style first — e.g. Marion Zimmer Bradley'
+                  }
+                  className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none"
+                  disabled={isAnalyzing}
+                />
+                <p className="ui-meta mt-2">
+                  Evokes prose rhythm and mood — not plot or quotes. We&apos;ll check it fits your story style.
+                  {selectedGenre && (
+                    <> Examples: {AUTHOR_EXAMPLES[selectedGenre]}.</>
+                  )}
+                </p>
+              </div>
+
+              <div className="genre-card p-3.5 rounded-lg border">
                 <button
                   type="submit"
                   disabled={!subject.trim() || !selectedGenre || isAnalyzing}
                   className="w-full genre-button ui-btn px-5 py-[0.6875rem] rounded-lg"
                 >
-                  {isAnalyzing ? 'Preparing your quiz...' : 'Begin Your Adventure'}
+                  {isAnalyzing ? 'Checking topic...' : 'Begin Your Adventure'}
                 </button>
               </div>
+
+              {topicGateError && (
+                <p className="ui-meta text-sm" style={{ color: 'var(--color-accent)' }}>
+                  {topicGateError}
+                </p>
+              )}
             </form>
+          </div>
+        </main>
+        {settingsModal}
+      </>
+    );
+  }
+
+  // =======================================================================
+  // TOPIC VALIDATION
+  // =======================================================================
+  if (uiPhase === 'validating_topic') {
+    return (
+      <>
+        <main className="scene">
+          <SceneAtmosphere />
+          <div className="scene__content ui-font">
+            <div className="mb-6 text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
+            </div>
+            <div className="genre-card p-8 rounded-lg text-center space-y-4">
+              <h2 className="text-2xl font-bold genre-title">Checking your topic</h2>
+              <p className="ui-subtitle">
+                Making sure SpellPath can teach <span className="font-medium">{subject}</span>...
+              </p>
+            </div>
+          </div>
+        </main>
+        {settingsModal}
+      </>
+    );
+  }
+
+  if (uiPhase === 'topic_reject') {
+    return (
+      <>
+        <main className="scene">
+          <SceneAtmosphere />
+          <div className="scene__content scene__content--intake ui-font">
+            <div className="mb-4 text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
+            </div>
+            <div className="genre-card p-6 rounded-lg space-y-4">
+              <h2 className="text-xl font-bold genre-title">Let's try a different topic</h2>
+              <p className="ui-subtitle">{topicValidation?.reason || TOPIC_REJECT_MESSAGE}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  setTopicValidation(null);
+                  setUiPhase('input');
+                }}
+                className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
+              >
+                Back to topic
+              </button>
+            </div>
+          </div>
+        </main>
+        {settingsModal}
+      </>
+    );
+  }
+
+  if (uiPhase === 'topic_clarify') {
+    return (
+      <>
+        <main className="scene">
+          <SceneAtmosphere />
+          <div className="scene__content scene__content--intake ui-font">
+            <div className="mb-4 text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
+            </div>
+            <form onSubmit={handleClarifyResubmit} className="genre-card p-6 rounded-lg space-y-4">
+              <h2 className="text-xl font-bold genre-title">Help us narrow it down</h2>
+              <p className="ui-subtitle">{topicValidation?.reason}</p>
+
+              <div>
+                <label className="ui-label">Topic</label>
+                <input
+                  type="text"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                  className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="ui-label">What specifically do you want to learn?</label>
+                <textarea
+                  value={learningGoals}
+                  onChange={(e) => setLearningGoals(e.target.value)}
+                  placeholder="e.g., Clan Munro in Scottish history, or how to research our family name..."
+                  rows={3}
+                  className="w-full px-3.5 py-[0.6875rem] genre-input rounded-lg focus:outline-none resize-y min-h-[4.5rem]"
+                />
+              </div>
+
+              {topicValidation?.suggestions?.length > 0 && (
+                <div className="space-y-2">
+                  <p className="ui-meta">Suggestions:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {topicValidation.suggestions.map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        type="button"
+                        onClick={() => setLearningGoals(suggestion)}
+                        className="genre-button ui-btn px-3 py-1.5 rounded-lg text-sm"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={!subject.trim()}
+                className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
+              >
+                Continue
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTopicValidation(null);
+                  setUiPhase('input');
+                }}
+                className="ui-link"
+              >
+                ← Back
+              </button>
+            </form>
+          </div>
+        </main>
+        {settingsModal}
+      </>
+    );
+  }
+
+  if (uiPhase === 'topic_author_warn') {
+    const suggestedGenre = STORY_GENRES.find(g => g.id === authorStyleWarning?.suggestedGenre);
+
+    return (
+      <>
+        <main className="scene">
+          <SceneAtmosphere />
+          <div className="scene__content scene__content--intake ui-font">
+            <div className="mb-4 text-center sm:text-left">
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
+            </div>
+            <div className="genre-card p-6 rounded-lg space-y-4">
+              <h2 className="text-xl font-bold genre-title">Author voice check</h2>
+              <p className="ui-subtitle">{authorStyleWarning?.reason}</p>
+              <p className="ui-meta">
+                You chose <span className="font-medium">{STORY_GENRES.find(g => g.id === selectedGenre)?.name}</span>
+                {' '}with author <span className="font-medium">{authorStyle.trim()}</span>.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => pendingTopicResult && acceptTopicValidation(pendingTopicResult)}
+                  className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
+                >
+                  Continue anyway
+                </button>
+                {suggestedGenre && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      handleGenreSelect(suggestedGenre.id);
+                      if (pendingTopicResult) acceptTopicValidation(pendingTopicResult);
+                    }}
+                    className="w-full genre-button ui-btn px-4 py-3 rounded-lg opacity-90"
+                  >
+                    Switch to {suggestedGenre.name} and continue
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthorStyle('');
+                    setAuthorStyleWarning(null);
+                    setPendingTopicResult(null);
+                    setUiPhase('input');
+                  }}
+                  className="ui-link"
+                >
+                  ← Edit author or topic
+                </button>
+              </div>
+            </div>
           </div>
         </main>
         {settingsModal}
@@ -419,7 +814,7 @@ function App() {
           <SceneAtmosphere />
           <div className="scene__content ui-font">
             <div className="mb-6 text-center sm:text-left">
-              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
               <h2 className="text-2xl font-bold genre-title">Tailoring Your Quiz</h2>
@@ -447,7 +842,7 @@ function App() {
           <SceneAtmosphere />
           <div className="scene__content ui-font scene__content--quiz">
             <div className="mb-6 text-center sm:text-left">
-              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
               <button
                 type="button"
                 onClick={() => setUiPhase('input')}
@@ -464,6 +859,16 @@ function App() {
                 {learningGoals.trim() && (
                   <p className="ui-meta mt-1">
                     Goal: <span className="font-medium">{learningGoals.trim()}</span>
+                  </p>
+                )}
+                {authorStyle.trim() && (
+                  <p className="ui-meta mt-1">
+                    Voice: <span className="font-medium">{authorStyle.trim()}</span>
+                  </p>
+                )}
+                {topicAcceptNote && (
+                  <p className="story-adaptation-notice story-adaptation-notice--path mt-3 mb-0" role="status">
+                    {topicAcceptNote}
                   </p>
                 )}
               </div>
@@ -496,7 +901,7 @@ function App() {
           <SceneAtmosphere />
           <div className="scene__content ui-font">
             <div className="mb-6 text-center sm:text-left">
-              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
             </div>
             <div className="genre-card p-8 rounded-lg text-center space-y-4">
               {error && !isLoading ? (
@@ -553,7 +958,7 @@ function App() {
           <SceneAtmosphere />
           <div className="scene__content ui-font">
             <div className="mb-6 text-center sm:text-left">
-              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
             </div>
 
             <div className="genre-card p-6 rounded-lg text-center space-y-4">
@@ -619,12 +1024,15 @@ function App() {
           <SceneAtmosphere />
           <div className="scene__content scene__content--story">
             <div className="mb-6 text-center sm:text-left story-chrome">
-              <Toolbar onOpenSettings={() => setShowSettings(true)} />
+              <Toolbar onOpenSettings={() => setShowSettings(true)} {...toolbarAuthProps} />
               <h2 className="text-2xl font-bold genre-title mb-2">Your Story</h2>
               <div className="flex items-center gap-3 mb-1">
                 <p className="ui-meta">
                   Beat {beatIndex + 1} of {totalBeats}
                 </p>
+                {scaffold?.beats?.[beatIndex]?.isRemedial && (
+                  <span className="story-remedial-badge">Practice beat</span>
+                )}
               </div>
               {progressBar}
             </div>
@@ -635,12 +1043,20 @@ function App() {
               </div>
             )}
 
+            {adaptationNotice?.type === 'path' && (
+              <p className="story-adaptation-notice story-adaptation-notice--path mb-4" role="status">
+                {adaptationNotice.message}
+              </p>
+            )}
+
             <StoryBeat
               key={beatIndex}
               narrative={currentBeatData?.narrative}
               checkpoint={currentBeatData?.checkpoint}
               onAnswer={handleCheckpointAnswer}
               isLoading={isLoading}
+              loadingMessage={loadingMessage}
+              adaptationNotice={adaptationNotice?.type !== 'path' ? adaptationNotice : null}
             />
 
             {checkpointAnswered && (

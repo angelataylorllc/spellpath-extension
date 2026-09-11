@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNarrativeReveal } from '../hooks/useNarrativeReveal';
 import { parseNarrativeBlocks } from './parseNarrativeBlocks';
 
-const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading }) => {
+const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading, loadingMessage, adaptationNotice }) => {
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
 
@@ -19,7 +19,9 @@ const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading }) => {
   if (isLoading) {
     return (
       <div className="genre-card story-loading p-8 rounded-xl text-center space-y-3">
-        <p className="story-loading__text">Crafting the next part of your story...</p>
+        <p className="story-loading__text">
+          {loadingMessage || 'Crafting the next part of your story...'}
+        </p>
         <div className="story-loading__pulse" aria-hidden="true" />
       </div>
     );
@@ -137,6 +139,15 @@ const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading }) => {
               }`}
             >
               {checkpointFeedback}
+            </p>
+          )}
+
+          {submitted && !wasCorrect && adaptationNotice && (
+            <p
+              className={`story-adaptation-notice story-adaptation-notice--${adaptationNotice.type}`}
+              role="status"
+            >
+              {adaptationNotice.message}
             </p>
           )}
         </div>

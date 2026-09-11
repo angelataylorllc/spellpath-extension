@@ -12,15 +12,18 @@ The AI may suggest a `scaffoldAdjustment` in its beat response when the learner'
 
 The engine (`StoryEngine.adjustScaffold`) applies these adjustments to the scaffold in memory. The scaffold bends but does not break — the original learning goal and overall arc are preserved.
 
+The engine may also **force** a remedial beat when the learner misses the **same concept twice** (`REMEDIAL_MISCONCEPTION_THRESHOLD = 2` in `src/stories/adaptation.js`). This does not wait on the model — it inserts a `isRemedial: true` beat at the cursor before the next beat loads.
+
 # How Adaptation Flows
 
 1. Learner answers a checkpoint.
 2. Engine records the result in `learnerProfile`.
-3. The next `POST /api/beat` call includes the updated profile.
-4. The AI sees misconceptions and confirmed understandings, and may:
-   - Weave corrections into the narrative (always)
-   - Suggest a `scaffoldAdjustment` (occasionally, when warranted)
-5. Engine applies any adjustment before advancing.
+3. **UI** shows an adaptation notice after a wrong answer:
+   - First miss on a concept: “Next beat will revisit [concept] through the story.”
+   - Second miss on the same concept: “We'll take an extra beat to revisit [concept] before moving on.”
+4. On **Continue**, the engine may insert a forced remedial beat, then calls `POST /api/beat` with the updated profile.
+5. When a beat loads, any `scaffoldAdjustment` from that beat response is applied **before** the narrative is shown (insert/annotate/skip after the current beat index).
+6. The AI sees misconceptions and confirmed understandings, and may weave corrections into the narrative.
 
 # Constraints
 

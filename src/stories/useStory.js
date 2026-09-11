@@ -12,6 +12,21 @@ function extractPreviousNarrativeOpening(narrative) {
   return s.length ? s : undefined;
 }
 
+function applyLoadedBeatSideEffects(engine, beatData, setScaffold) {
+  if (!beatData?.scaffoldAdjustment) {
+    return { adjustmentNotice: null };
+  }
+
+  const changed = engine.applyLoadedBeatAdjustment(beatData.scaffoldAdjustment);
+  if (changed) {
+    setScaffold({ ...engine.scaffold });
+  }
+
+  return {
+    adjustmentNotice: engine.getScaffoldAdjustmentNotice(beatData.scaffoldAdjustment),
+  };
+}
+
 export const useStory = () => {
   const engineRef = useRef(new StoryEngine());
   const engine = engineRef.current;
@@ -25,6 +40,8 @@ export const useStory = () => {
   const [storySoFar, setStorySoFar] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [adaptationNotice, setAdaptationNotice] = useState(null);
+  const [loadingMessage, setLoadingMessage] = useState(null);
 
   const syncState = useCallback(() => {
     setPhase(engine.getPhase());
@@ -45,8 +62,12 @@ export const useStory = () => {
     learningGoals,
     learningFocus,
     answers,
+    topicCategory,
+    authorStyle,
   }) => {
     setError(null);
+    setAdaptationNotice(null);
+    setLoadingMessage(null);
     setIsLoading(true);
     engine.setPhase(STORY_PHASES.SCAFFOLD);
     engine.setLevel(level || 'beginner');
@@ -63,6 +84,8 @@ export const useStory = () => {
         motivation,
         learningGoals,
         learningFocus,
+        topicCategory: topicCategory || 'standard',
+        authorStyle: authorStyle || '',
         answers,
       });
       engine.initFromScaffold(scaffoldData);
@@ -75,6 +98,7 @@ export const useStory = () => {
         currentBeat: ctx.currentBeat,
         learnerProfile: ctx.learnerProfile,
         storySoFar: ctx.storySoFar,
+        recentCheckpoints: ctx.recentCheckpoints,
         genre,
         mode,
         beatIndex: ctx.beatIndex,
@@ -82,6 +106,7 @@ export const useStory = () => {
         previousNarrativeOpening: undefined,
       });
 
+      applyLoadedBeatSideEffects(engine, beatData, setScaffold);
       setCurrentBeatData(beatData);
       engine.setPhase(STORY_PHASES.NARRATION);
       syncState();
@@ -93,22 +118,25 @@ export const useStory = () => {
       throw err;
     } finally {
       setIsLoading(false);
+      setLoadingMessage(null);
     }
   }, [engine, syncState]);
 
   // Load the current beat's content from the API
-  const loadBeat = useCallback(async () => {
+  const loadBeat = useCallback(async ({ loadingHint } = {}) => {
     if (!scaffold) return;
     setError(null);
     setIsLoading(true);
+    if (loadingHint) setLoadingMessage(loadingHint);
 
     try {
       const ctx = engine.getPromptContext();
       const beatData = await generateBeat({
-        scaffold,
+        scaffold: engine.scaffold || scaffold,
         currentBeat: ctx.currentBeat,
         learnerProfile: ctx.learnerProfile,
         storySoFar: ctx.storySoFar,
+        recentCheckpoints: ctx.recentCheckpoints,
         genre: scaffold.theme?.genre,
         mode: scaffold.theme?.mode,
         beatIndex: ctx.beatIndex,
@@ -116,18 +144,30 @@ export const useStory = () => {
         previousNarrativeOpening: extractPreviousNarrativeOpening(currentBeatData?.narrative),
       });
 
+      const { adjustmentNotice } = applyLoadedBeatSideEffects(engine, beatData, setScaffold);
       setCurrentBeatData(beatData);
       engine.setPhase(STORY_PHASES.NARRATION);
       syncState();
+
+      if (adjustmentNotice) {
+        setAdaptationNotice({
+          type: 'path',
+          concept: ctx.currentBeat?.concept || '',
+          message: adjustmentNotice,
+        });
+      }
     } catch (err) {
       setError(err?.message || 'Failed to generate beat');
     } finally {
       setIsLoading(false);
+      setLoadingMessage(null);
     }
   }, [engine, scaffold, syncState, currentBeatData]);
 
   // Called when the user answers a checkpoint
   const submitCheckpoint = useCallback(({ selectedIndex, correct }) => {
+    const concept = engine.getCurrentBeat()?.concept || '';
+
     engine.recordCheckpoint({
       selectedIndex,
       correct,
@@ -136,18 +176,14 @@ export const useStory = () => {
       checkpoint: currentBeatData?.checkpoint,
     });
 
-    if (currentBeatData?.scaffoldAdjustment) {
-      engine.adjustScaffold(currentBeatData.scaffoldAdjustment);
-      setScaffold({ ...engine.scaffold });
-      setTotalBeats(engine.getTotalBeats());
-    }
-
+    setAdaptationNotice(engine.getAdaptationNotice({ correct, concept }));
     engine.setPhase(STORY_PHASES.CHECKPOINT);
     syncState();
   }, [engine, currentBeatData, syncState]);
 
   // Called after checkpoint feedback — advance to next beat or complete
   const continueStory = useCallback(async () => {
+    setAdaptationNotice(null);
     const hasMore = engine.advanceBeat();
     syncState();
 
@@ -156,7 +192,17 @@ export const useStory = () => {
       return;
     }
 
-    await loadBeat();
+    const remedial = engine.maybeInsertRemedialBeat();
+    if (remedial) {
+      setScaffold({ ...engine.scaffold });
+      syncState();
+    }
+
+    const loadingHint = remedial
+      ? `Crafting a practice beat on ${remedial.concept}…`
+      : null;
+
+    await loadBeat({ loadingHint });
   }, [engine, syncState, loadBeat]);
 
   const reset = useCallback(() => {
@@ -165,6 +211,8 @@ export const useStory = () => {
     setCurrentBeatData(null);
     setError(null);
     setIsLoading(false);
+    setAdaptationNotice(null);
+    setLoadingMessage(null);
     syncState();
   }, [engine, syncState]);
 
@@ -177,7 +225,9 @@ export const useStory = () => {
     totalBeats,
     storySoFar,
     isLoading,
+    loadingMessage,
     error,
+    adaptationNotice,
     initScaffold,
     loadBeat,
     submitCheckpoint,

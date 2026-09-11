@@ -1329,10 +1329,6 @@
   color: var(--color-highlight);
 }
 
-:root[data-theme="adventure"][data-mode="day"] .story-dialogue-line {
-  color: var(--color-accent);
-}
-
 /* ============================================
    MYSTERY ATMOSPHERE
    ============================================ */
@@ -1755,7 +1751,7 @@
 }
 
 :root[data-theme="horror"][data-mode="day"] .story-dialogue-line {
-  color: var(--color-accent);
+  color: var(--color-accent-soft);
 }
 
 /* ============================================
@@ -1846,6 +1842,11 @@
   letter-spacing: 0.01em;
   margin: 0;
   padding-left: 1.25rem;
+}
+
+/* Day mode: accent is often too light on parchment backgrounds — use darker surface tone */
+:root[data-mode="day"] .story-dialogue-line {
+  color: color-mix(in srgb, var(--color-text) 22%, var(--color-surface));
 }
 
 :root[data-theme="fantasy"][data-mode="night"] .story-dialogue-line {
@@ -1969,6 +1970,42 @@
 .story-checkpoint__feedback--incorrect {
   color: var(--color-text-muted);
   font-style: italic;
+}
+
+.story-adaptation-notice {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border-radius: 0.5rem;
+  border-left: 3px solid var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-text);
+}
+
+.story-adaptation-notice--remedial {
+  border-left-color: var(--color-accent);
+}
+
+.story-adaptation-notice--revisit {
+  border-left-color: var(--color-text-muted);
+}
+
+.story-adaptation-notice--path {
+  border-left-color: var(--color-accent);
+}
+
+.story-remedial-badge {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
 }
 
 .story-loading__text {

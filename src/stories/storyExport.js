@@ -10,6 +10,7 @@ export function buildSessionArchive({
   level,
   learningGoals,
   learningFocus,
+  authorStyle,
   scaffold,
   completedBeats,
   learnerProfile,
@@ -24,8 +25,10 @@ export function buildSessionArchive({
     level: level || learnerProfile?.level || 'beginner',
     learningGoals: learningGoals || learnerProfile?.learningGoals || scaffold?.learningGoalsSummary || '',
     learningFocus: learningFocus || learnerProfile?.learningFocus || scaffold?.learningFocus || '',
+    authorStyle: authorStyle || scaffold?.authorStyle || '',
     topicType: scaffold?.topicType || null,
-    theme: scaffold?.theme || null,
+  topicCategory: scaffold?.topicCategory || null,
+  theme: scaffold?.theme || null,
     learnerProfile: learnerProfile || null,
     intakeAnswers: intakeAnswers || [],
     beats: (completedBeats || []).map(beat => ({
@@ -238,7 +241,13 @@ function renderStoryPrintHtml(archive) {
   <h1>${title}</h1>
   <p class="meta">${[genre, mode].filter(Boolean).join(' · ')} · ${archive.beats?.length || 0} beats</p>
   ${beatsHtml}
-  <footer>Exported from SpellPath · ${escapeHtml(archive.exportedAt)}</footer>
+  <footer>
+    Exported from SpellPath · ${escapeHtml(archive.exportedAt)}<br>
+    AI-generated content — verify important facts independently.
+    ${archive.topicCategory === 'heritage'
+      ? '<br>Heritage stories use documented history and research guidance; they are not verified genealogy.'
+      : ''}
+  </footer>
 </body>
 </html>`;
 }

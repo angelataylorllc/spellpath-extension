@@ -4,6 +4,220 @@ Living doc for project status across sessions. Read this at the start of a new s
 
 ---
 
+## Release plan (current — Sept 2026)
+
+Three release tracks, **one hosted API** (`api.spellpath.app`), **one codebase**.
+
+| Track | Goal | Distribution | AI billing | ~% complete |
+|-------|------|--------------|------------|-------------|
+| **1. Friend (private BYOK)** | Tech friends try without hitting your LLM bill | Unlisted Chrome link or zip | Their API keys | **~83%** |
+| **2. MVP1 (public extension)** | Paying users via Chrome Web Store | Public Web Store | Your keys + Stripe | **~45%** |
+| **3. MVP2 (web app)** | Same product at `spellpath.app`, mobile-friendly | Browser URL (+ optional PWA) | Same as MVP1 | **~20%** |
+
+### Build order
+
+1. **Friend BYOK** — host API + Google allowlist + private `VITE_EDITION=byok` build  
+2. **MVP1 public** — Stripe + consumer build + Store listing  
+3. **MVP2 web app** — deploy UI + responsive layout  
+
+### Product / billing decisions (locked for now)
+
+- **Domain:** `spellpath.app` renewed (~$23/yr). `spellpath.com` not owned (premium aftermarket — skip).
+- **Public pricing:** **$10/mo**, **~10 stories/month**, **1 free story** before subscribe (no card).
+- **Auth:** Google sign-in required before any story (public + allowlisted friends).
+- **Public AI:** Platform keys on server (Anthropic Haiku default); BYOK hidden in consumer build.
+- **Friend AI:** Same hosted API; allowlisted emails + BYOK headers; no Stripe; private extension build with Settings visible.
+- **Hosting:** CJ server **sea0** — see **Hosting (CJ)** below. Old `192.53.112.85` (angelataylorllc.com DNS) dead. Squarespace = DNS/registrar only.
+
+### Hosting (CJ) — Sept 2026
+
+```text
+wp.c9h.org  →  CNAME  sea0.c9h.org  →  A  172.232.172.101
+```
+
+| Item | Value |
+|------|--------|
+| **Hostname** | `wp.c9h.org` (CJ’s; points at `sea0.c9h.org`) |
+| **IP** | `172.232.172.101` (Linode/Akamai range) |
+| **Web server** | Apache 2.4.59 (Debian) — default placeholder page today |
+| **HTTPS** | Works on `https://wp.c9h.org` |
+
+**SpellPath API hostname (chosen):** **`api.spellpath.app`**
+
+| Who | Task |
+|-----|------|
+| **Angela** | DNS A record: `api.spellpath.app` → `172.232.172.101` (Squarespace/registrar) |
+| **CJ** | Apache vhost + Let’s Encrypt for `api.spellpath.app`; reverse-proxy → Node `:4000` on localhost |
+| **Angela** | Deploy app; prod builds use `.env.production` → `VITE_API_BASE` |
+
+**CJ status (Sept 10):** Agreed to `api.spellpath.app` vhost + TLS + proxy → `:4000` + SSH. Busy; likely **tomorrow** after current task.
+
+**Still need from CJ:** SSH/sudo access, Node.js 18+, process manager (pm2/systemd), firewall (443 public; Node localhost only).
+
+### Build #1 — Friend BYOK (full task list)
+
+**Goal:** Allowlisted friends install a private extension, sign in with Google, paste their own API keys, hit **`https://api.spellpath.app`** (or interim hostname — change one line in `.env.production` and rebuild).
+
+| # | Task | Status | Notes |
+|---|------|--------|-------|
+| **Product (learning app)** |
+| 1 | Story pipeline (scaffold → beats → checkpoints) | ✅ | |
+| 2 | Adaptation + remedial beats | ✅ | Visible notices in UI |
+| 3 | Topic gate (`/api/validate-topic`) | ✅ | Reject / clarify / heritage |
+| 4 | Genre + optional author voice | ✅ | |
+| 5 | Checkpoint option shuffle | ✅ | |
+| 6 | Export / narrative layout | ✅ | Session 4 |
+| **BYOK (client + server)** |
+| 7 | Settings: provider + key per provider | ✅ | |
+| 8 | BYOK headers on all API calls | ✅ | `contentApi.js` |
+| 9 | Multi-LLM adapters (OpenAI, Anthropic, Gemini) | ✅ | `server/lib/llm/` |
+| 10 | Server BYOK resolution + `SPELLPATH_ALLOW_BYOK` | ✅ | Platform fallback optional |
+| **Prod extension build** |
+| 11 | `.env.production` → `VITE_API_BASE` | ✅ | `https://api.spellpath.app` |
+| 12 | `.env.production` → `VITE_EDITION=byok` | ✅ | Env set; `consumer` hide-BYOK wiring is MVP1 |
+| 13 | `npm run build:byok` → `dist/` | ✅ | Prod API URL |
+| 13b | `npm run build:local` → `dist/` | ✅ | Local dev: `localhost:4000` |
+| 14 | Private zip + install instructions for friends | ❌ | After API is live |
+| **Hosting + deploy** |
+| 15 | DNS: `api.spellpath.app` → `172.232.172.101` | ❌ | Squarespace; after CJ confirms |
+| 16 | CJ: Apache vhost + TLS + proxy → `:4000` | ❌ | CJ: ~tomorrow |
+| 17 | SSH + deploy Node app on sea0 | ❌ | `git clone`, `.env`, pm2/systemd |
+| 18 | Prod server `.env` (BYOK on, usage log optional) | ❌ | No platform keys required for BYOK |
+| **Auth + access control** |
+| 19 | Google sign-in in extension | ✅ | `chrome.identity` + `LoginGate` |
+| 20 | Server: email allowlist (env or file) | ✅ | `SPELLPATH_ALLOWLIST` |
+| 21 | API middleware: reject unauthenticated / non-allowlisted | ✅ | `/api/*` except `/api/health` |
+| 22 | Google OAuth client ID in `.env.production` | ✅ | spellpath GCP project; test users |
+| 23 | Prod server `SPELLPATH_AUTH_REQUIRED=true` + allowlist | ❌ | Works locally; set on sea0 deploy |
+| 24 | End-to-end sign-in tested locally | ✅ | hello@angelataylorllc.com + build:local |
+
+**Build #1 progress:** **20 / 24 tasks done → ~83%**. **Hosting + deploy + friend zip** remain.
+
+**Config knobs (change hostname / auth in one place):**
+
+| File | Vars |
+|------|------|
+| `.env.production` | `VITE_API_BASE`, `VITE_AUTH_REQUIRED`, `VITE_GOOGLE_OAUTH_CLIENT_ID` |
+| Server `.env` | `SPELLPATH_AUTH_REQUIRED`, `SPELLPATH_ALLOWLIST` |
+
+**What's next (in order):**
+
+1. **Optional now:** test a story locally (Settings → BYOK key → run adventure).
+2. **CJ (~tomorrow):** vhost + TLS + SSH on sea0.
+3. **You:** DNS A `api.spellpath.app` → `172.232.172.101`; deploy Node + prod `.env`.
+4. **`npm run build:byok`**, smoke-test hosted API, zip `dist/` + short install doc for friends.
+
+### MVP1 public — remaining (after #1)
+
+| Task | Status |
+|------|--------|
+| `VITE_EDITION=consumer` — hide BYOK in UI | ❌ |
+| User DB: `freeStoryUsed`, `storiesThisMonth`, subscription | ❌ |
+| 1 free story gate + Stripe Checkout + webhook | ❌ |
+| $10/mo / 10 stories enforcement on server | ❌ |
+| Chrome Web Store + minimal `spellpath.app` landing | ❌ |
+
+### MVP2 web app — remaining (after MVP1)
+
+| Task | Status |
+|------|--------|
+| Deploy React UI to `spellpath.app` | ❌ |
+| Replace `chrome.storage` with account-backed sync | ❌ |
+| Responsive / mobile layout | ❌ |
+
+### Dev reminders
+
+```bash
+cd spellpath-extension
+npm run build:byok     # → dist/; uses .env.production (api.spellpath.app)
+npm run api            # local API on :4000 — dev only until api.spellpath.app is live
+```
+
+Load extension from **`dist/`**, not project root. Restart API after server changes.
+
+---
+
+## Session 5 — Aug–Sept 2026
+
+### Starting State
+
+- Session 4 shipped export, narrative layout, and API hardening. User testing continued (day trading, Munroe clan, Outer Hebrides, family/mom runs).
+- Product direction shifted from “extension augmenting browsing” toward **destination learning app** with hosted release in mind.
+
+### What We Did
+
+**1. Intake + learning goals (Phase 1–2)**
+
+- Age ranges, shorter AI intake, `learningGoals` + `learningFocus` on home screen.
+- Genre-leak filter in intake (`normalizeIntake.js`).
+- Topic/goals flow through scaffold and beat prompts.
+
+**2. Multi-LLM BYOK**
+
+- `server/lib/llm/` — OpenAI, Anthropic, Gemini via `callLLM()`.
+- Settings: provider picker + one key per provider; active provider in `apiCredentials.js`.
+- Removed silent mock fallback for scaffold/beat — errors surface in UI.
+
+**3. Adaptation + checkpoints**
+
+- Visible adaptation notices after wrong answers; forced remedial beat after 2 misses on same concept.
+- `scaffoldAdjustment` applied when beat loads (not on checkpoint submit).
+- Checkpoint options **shuffled** on server so correct answer isn’t always first.
+- Beat prompt: no fourth-wall “checkpoint forming” language.
+
+**4. Topic gate**
+
+- Client junk filter + `POST /api/validate-topic` (accept / clarify / reject).
+- Heritage topics require goals; honesty note for clan/family subjects.
+- UI phases: validating, reject, clarify, author-style warn.
+
+**5. Genre voice + author style**
+
+- `lib/genreVoice.js` — stronger genre rules in scaffold/beat payloads.
+- Optional **Author voice** field (e.g. Marion Zimmer Bradley); genre compatibility check on validate.
+
+**6. UI fix**
+
+- Day-mode **dialogue contrast** — darker text on parchment backgrounds (mystery/adventure).
+
+**7. Release / infra planning (not yet implemented)**
+
+- Purchased **`spellpath.app`**. Clarified extension (Web Store) vs hosted API (CJ server / Railway).
+- Dual-track plan: private BYOK friends vs public Google + Stripe.
+- Pricing: $10/mo, 1 free story, Google auth prerequisite.
+
+### Key Files (recent)
+
+| Area | Paths |
+|------|-------|
+| Topic gate | `src/lib/validateTopicClient.js`, `server/lib/normalizeTopicValidation.js`, `POST /api/validate-topic` |
+| Adaptation | `src/stories/adaptation.js`, `src/stories/engine.js`, `src/stories/useStory.js` |
+| Genre / author | `lib/genreVoice.js`, `src/config/genreVoice.js` |
+| LLM | `server/lib/llm/`, `src/services/apiCredentials.js`, `Settings.jsx` |
+| Checkpoints | `server/lib/normalizeBeat.js` (shuffle) |
+| Contracts | `docs/contracts/04-checkpoints.md`, `05-adaptation.md` |
+
+### Pitfalls Learned
+
+- **Adaptation was invisible** — prompt-only; now has UI notices + remedial beats.
+- **Settings “no server key”** vs **“key saved”** — two systems (`.env` platform fallback vs BYOK in extension); both can be true.
+- **Genre “Fantasy”** still read as plain history without `genreVoice` + author prompts — needs new stories to see effect.
+- **Public share links** (Claude) aren’t readable by agents; paste or export for handoff.
+
+### Current State
+
+- **Dev:** Full story pipeline works locally (`npm run api` + extension from `dist/`).
+- **Not launch-ready:** API is localhost-only; no auth, Stripe, hosted deploy, or dual extension builds.
+- **Next focus:** **Friend BYOK track (#1)** — host API, Google allowlist, private build.
+
+### Next Session — Priority
+
+1. **Friend BYOK (release track #1)** — see table in **Release plan** above.
+2. Then MVP1 public (Stripe, consumer build, Store).
+3. Then MVP2 web app.
+
+---
+
 ## Session 4 — June 14–15, 2026
 
 ### Starting State

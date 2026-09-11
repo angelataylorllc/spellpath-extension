@@ -38,9 +38,14 @@ npm install
 ```bash
 npm run dev          # Start development server with hot reload
 npm run build        # Build extension for production
+npm run build:byok   # Same as build — uses .env.production (api URL + byok edition)
 npm run preview      # Preview built extension
 npm run api          # Local SpellPath API. Copy `.env.example` → `.env`
 ```
+
+**Prod config:** `.env.production` holds `VITE_API_BASE`, `VITE_AUTH_REQUIRED`, and `VITE_GOOGLE_OAUTH_CLIENT_ID` (hostname/auth changes = edit that file + rebuild). Local `npm run api` uses `.env` (`SPELLPATH_AUTH_REQUIRED=false` until prod).
+
+**Google sign-in (friend BYOK):** Google Cloud → OAuth client type **Chrome extension** → add extension ID from `chrome://extensions` → paste client ID into `.env.production` → `npm run build:byok`. Server: `SPELLPATH_AUTH_REQUIRED=true` and `SPELLPATH_ALLOWLIST=email1@...,email2@...`.
 
 **AI providers:** OpenAI, Anthropic (Claude), and Google Gemini. Set platform keys in `.env` and/or choose a provider + paste your key in **Settings** (BYOK). See `docs/ai-billing-and-byok.md`.
 

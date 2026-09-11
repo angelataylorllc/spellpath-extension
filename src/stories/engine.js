@@ -8,6 +8,13 @@
 // and the learner profile. It does NOT generate content or call APIs.
 
 import { parseNarrativeBlocks } from './parseNarrativeBlocks';
+import {
+  REMEDIAL_MISCONCEPTION_THRESHOLD,
+  buildRemedialBeat,
+  countMisconceptionsForConcept,
+  getAdaptationNotice,
+  getScaffoldAdjustmentNotice,
+} from './adaptation';
 
 export const STORY_PHASES = {
   INTAKE: 'intake',
@@ -37,6 +44,9 @@ export class StoryEngine {
 
     // Completed beat summaries + checkpoint results
     this.completedBeats = [];
+
+    /** Concepts that already received an engine-inserted remedial beat */
+    this.remedialInsertedFor = [];
   }
 
   // --- Scaffold lifecycle ---
@@ -45,6 +55,7 @@ export class StoryEngine {
     this.scaffold = scaffoldData;
     this.beatCursor = 0;
     this.completedBeats = [];
+    this.remedialInsertedFor = [];
     this.currentPhase = STORY_PHASES.NARRATION;
   }
 
@@ -99,9 +110,11 @@ export class StoryEngine {
         beat?.concept ?? `beat_${this.beatCursor}`
       );
     } else {
+      const selectedLabel = options[selectedIndex]?.label ?? null;
       this.learnerProfile.misconceptions.push({
         concept: beat?.concept ?? `beat_${this.beatCursor}`,
         beatIndex: this.beatCursor,
+        wrongAnswer: selectedLabel,
       });
     }
 
@@ -123,25 +136,82 @@ export class StoryEngine {
   // --- Scaffold adjustment ---
 
   adjustScaffold(adjustment) {
-    if (!adjustment || !this.scaffold?.beats) return;
+    if (!adjustment || !this.scaffold?.beats) return false;
 
     const { action, beats: newBeats, annotations } = adjustment;
+    let changed = false;
 
-    if (action === 'insert' && Array.isArray(newBeats)) {
+    if (action === 'insert' && Array.isArray(newBeats) && newBeats.length > 0) {
       this.scaffold.beats.splice(this.beatCursor + 1, 0, ...newBeats);
+      changed = true;
     }
 
     if (action === 'annotate' && annotations) {
       const beat = this.scaffold.beats[this.beatCursor + 1];
-      if (beat) Object.assign(beat, annotations);
+      if (beat) {
+        Object.assign(beat, annotations);
+        changed = true;
+      }
     }
 
     if (action === 'skip') {
       const nextBeat = this.scaffold.beats[this.beatCursor + 1];
       if (nextBeat?.flexibility === 'skippable') {
         this.scaffold.beats.splice(this.beatCursor + 1, 1);
+        changed = true;
       }
     }
+
+    return changed;
+  }
+
+  /** Apply scaffoldAdjustment from a loaded beat (inserts after the current beat). */
+  applyLoadedBeatAdjustment(adjustment) {
+    return this.adjustScaffold(adjustment);
+  }
+
+  getScaffoldAdjustmentNotice(adjustment) {
+    return getScaffoldAdjustmentNotice(adjustment);
+  }
+
+  /** After 2+ wrong answers on the same concept, insert a remedial beat at the cursor. */
+  maybeInsertRemedialBeat() {
+    if (!this.scaffold?.beats?.length) return null;
+
+    const misconceptions = this.learnerProfile.misconceptions;
+    if (!misconceptions.length) return null;
+
+    const last = misconceptions[misconceptions.length - 1];
+    const concept = last.concept;
+    if (!concept || this.remedialInsertedFor.includes(concept)) return null;
+
+    const missCount = countMisconceptionsForConcept(misconceptions, concept);
+    if (missCount < REMEDIAL_MISCONCEPTION_THRESHOLD) return null;
+
+    const remedial = buildRemedialBeat({
+      concept,
+      wrongAnswer: last.wrongAnswer,
+      beatIndex: this.beatCursor,
+    });
+
+    this.scaffold.beats.splice(this.beatCursor, 0, remedial);
+    this.remedialInsertedFor.push(concept);
+    return remedial;
+  }
+
+  willScheduleRemedialBeat(concept) {
+    if (!concept || this.remedialInsertedFor.includes(concept)) return false;
+    const missCount = countMisconceptionsForConcept(this.learnerProfile.misconceptions, concept);
+    return missCount >= REMEDIAL_MISCONCEPTION_THRESHOLD;
+  }
+
+  getAdaptationNotice({ correct, concept }) {
+    return getAdaptationNotice({
+      correct,
+      concept,
+      misconceptions: this.learnerProfile.misconceptions,
+      remedialAlreadyScheduled: this.willScheduleRemedialBeat(concept),
+    });
   }
 
   // --- Prompt context ---
@@ -153,6 +223,13 @@ export class StoryEngine {
       beatIndex: this.beatCursor,
       learnerProfile: { ...this.learnerProfile },
       storySoFar: this.completedBeats.map(b => b.summary),
+      recentCheckpoints: this.completedBeats.map(b => ({
+        beatTitle: b.beatTitle,
+        concept: b.concept,
+        correct: b.correct,
+        selectedLabel: b.checkpointRecord?.selectedLabel ?? null,
+        question: b.checkpointRecord?.question ?? null,
+      })),
     };
   }
 
@@ -186,6 +263,7 @@ export class StoryEngine {
       misconceptions: [],
     };
     this.completedBeats = [];
+    this.remedialInsertedFor = [];
   }
 
   setLevel(level) {

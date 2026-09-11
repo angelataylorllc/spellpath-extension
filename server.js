@@ -10,15 +10,22 @@ import { callLLM } from './server/lib/llm/callLLM.js';
 import { DEFAULT_MODELS } from './server/lib/llm/providers.js';
 import { normalizeBeatResponse, checkpointOptionsValid } from './server/lib/normalizeBeat.js';
 import { normalizeIntakeResponse } from './server/lib/normalizeIntake.js';
+import { normalizeTopicValidation } from './server/lib/normalizeTopicValidation.js';
+import { authorStylePromptBlock, genreVoicePromptBlock } from './lib/genreVoice.js';
+import { getAuthConfig } from './server/lib/auth/config.js';
+import { createRequireAuthMiddleware } from './server/lib/auth/middleware.js';
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 4000;
+const authConfig = getAuthConfig();
+const requireAuth = createRequireAuthMiddleware(authConfig);
 
 const platformKeys = getPlatformKeyStatus();
 console.log('Platform keys configured:', platformKeys);
 console.log('BYOK allowed:', process.env.SPELLPATH_ALLOW_BYOK !== 'false');
+console.log('Auth required:', authConfig.authRequired, '| Allowlist size:', authConfig.allowlist.size);
 
 app.use(express.json());
 
@@ -26,7 +33,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
-    `Origin, X-Requested-With, Content-Type, Accept, ${SPELLPATH_PROVIDER_HEADER}, ${SPELLPATH_API_KEY_HEADER}, ${SPELLPATH_BYOK_HEADER}`,
+    `Origin, X-Requested-With, Content-Type, Accept, Authorization, ${SPELLPATH_PROVIDER_HEADER}, ${SPELLPATH_API_KEY_HEADER}, ${SPELLPATH_BYOK_HEADER}`,
   );
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
@@ -69,7 +76,8 @@ Rules:
 - Each beat covers ONE concept. Do not bundle multiple ideas.
 - narrativeHint must read like a choose-your-own-adventure beat setup (where we are, what’s at stake),
   using genre imagery. Do not write teaching prose or define terms here.
-- checkpointFocus is for planning only — it should name the idea to test, not the story wording.
+- checkpointFocus is for planning only — it should name the idea to test and a common misconception to avoid,
+  e.g. "Learner distinguishes X from Y; common mistake: thinking Z is enough."
 - Mark foundational beats as "rigid", enrichment beats as "soft", tangential beats as "skippable".
 - The first beat should hook the learner, the last should synthesize.
 - Keep the scaffold concise — no full explanations, no prose.
@@ -96,22 +104,56 @@ Beat arc by topicType:
 learningGoals and learningFocus are PRIMARY constraints:
 - If learningGoals names specific tasks (e.g. "connect Printify to Etsy"), dedicate beats to those — not generic overview.
 - Match learningFocus: "practical" → hands-on scenario beats; "concepts" → how-it-works beats; etc.
-- learningGoalsSummary: distill learningGoals into one plain sentence for beat writers; empty string if none given.`.trim();
+- learningGoalsSummary: distill learningGoals into one plain sentence for beat writers; empty string if none given.
+
+Topic category (when provided in user payload as topicCategory):
+- "standard" — default teaching rules
+- "heritage" — clan, family, ancestry, genealogy: teach documented history and research methods; NEVER invent
+  specific personal lineage, ancestors, or family facts; hedge claims ("historians believe", "many families");
+  include how to verify with archives and primary sources; do not present AI guesses as the learner's family truth
+- "niche" — obscure or hard-to-verify topics: hedge factual claims; prefer teaching frameworks and verification
+  over invented specifics
+
+GENRE VOICE (see genreVoice in user payload — CRITICAL):
+- Every narrativeHint MUST match the selected genre. Never plan plain documentary or textbook beats when a genre is set.
+- If authorStyle is in the payload, plan hints that fit that prose voice within genre rules.`.trim();
+
+const heritageBeatRules = `
+HERITAGE / GENEALOGY (when scaffold.topicCategory is "heritage"):
+- Teach documented history and how to research — not fabricated personal lineage.
+- NEVER state as fact that the learner's specific ancestors did X unless framed as illustrative fiction.
+- Hedge historical claims; name concepts plainly in dialogue.
+- Checkpoints test understanding of history/research concepts, not made-up family trivia.`.trim();
 
 const beatSystemPrompt = `
 You are SpellPath, writing ONE beat of an interactive story that secretly teaches one concept.
 
 You receive (JSON user payload):
-- scaffold (includes topicType, learningGoalsSummary, learningFocus), currentBeat (concept, narrativeHint, checkpointFocus), learnerProfile (level, age, motivation, learningGoals, learningFocus), storySoFar
+- scaffold (includes topicType, learningGoalsSummary, learningFocus), currentBeat (concept, narrativeHint, checkpointFocus), learnerProfile (level, age, motivation, learningGoals, learningFocus, confirmedUnderstandings, misconceptions), storySoFar, recentCheckpoints
 - genre, mode
 - beatIndex (0-based index of this beat in the journey) and totalBeats
 - previousNarrativeOpening (optional): first paragraph of the LAST beat’s narrative — used only to avoid repetition
 
-Tone: choose-your-own-adventure / fiction-first. Build a scene with dialogue and momentum before any “lesson” feeling.
+Tone: choose-your-own-adventure / fiction-first. Build a scene with dialogue and momentum — but the learner must leave this beat understanding currentBeat.concept.
 Calibrate vocabulary and complexity to learnerProfile.age and learnerProfile.level (see scaffold calibration rules).
 Respect scaffold.topicType: tool_workflow beats teach actionable steps through scenario; concept beats may use metaphor
 but must land the idea; skill beats show technique through practice in scene.
 If scaffold.learningGoalsSummary is non-empty, tie this beat's concept directly to those goals — do not drift generic.
+
+GENRE + AUTHOR (see genreVoice and authorStyleGuide in user payload — CRITICAL):
+- Every beat MUST feel like the selected genre — not plain history or documentary tone.
+- If authorStyleGuide is non-empty, evoke that prose mood and rhythm; never name the author or their books in text.
+
+ADAPTATION (when learnerProfile or recentCheckpoints show prior results):
+- If misconceptions is non-empty: the narrative MUST address the most recent misconception through story events
+  (not a lecture). Weave the correction into dialogue or a failed attempt that gets redirected.
+- If the learner got the last checkpoint wrong (see recentCheckpoints): open by contrasting their wrong intuition
+  with what actually works — still in scene, not "you were wrong."
+- If currentBeat.isRemedial is true: this is a forced practice beat — simplify the example, name the concept
+  clearly in dialogue, and test the exact idea the learner missed twice.
+- If confirmedUnderstandings is non-empty: do not re-teach those concepts from scratch; build on them.
+- Suggest scaffoldAdjustment (insert/annotate) only when a misconception clearly needs an extra remedial beat.
+${heritageBeatRules}
 
 Return ONLY JSON matching this schema:
 {
@@ -141,20 +183,31 @@ FORMAT for "narrative" (critical):
   (e.g. do not repeat “moon + market + silence + stalls” if that text appeared before).
 - Paragraphs 2–4: Escalate the scene — character interaction, conflict, stakes, world detail. Let the concept
   surface through events, trade-offs, and dialogue subtext — not a lecture.
+- TEACHING (required): By paragraph 4 at latest, the narrative must make currentBeat.concept concrete —
+  the learner should be able to state the idea in plain language after reading. For tool_workflow topics,
+  show a specific step, decision, or connection (e.g. linking Printify to TikTok Shop), not vague metaphor alone.
+  Use at least ONE explicit story moment where a character names or demonstrates the concept (still in voice).
 - Paragraph 5 (or end of 4 if tight): Land the moment that makes the checkpoint inevitable — still in scene.
 - If beatIndex is 0: you may establish setting. If beatIndex > 0: treat storySoFar as continuity — advance time or
   situation; do not restart with a fresh generic establishing shot that ignores what already happened.
 - Do not put the checkpoint question text inside the narrative.
+- NEVER break the fourth wall: do not mention "checkpoint", "quiz", "the question forming in your mind", or that the learner is being tested.
 
 CHECKPOINT (after the story is built):
 - "question": ONE short sentence (18 words max), in-world, sounding like a dilemma or choice — not a textbook.
-- Options: three short labels (each ≤ 10 words). Exactly one correct. Plausible wrong answers in-story.
+- Options: three short labels (each ≤ 12 words). Exactly one correct. Return as { "label", "correct" } objects.
+  Order does not matter — options are shuffled before display.
+- The checkpoint tests currentBeat.checkpointFocus — conceptual grasp, not trivia or story recall.
+- WRONG options must be plausible: each should reflect a common misconception, partial truth, or tempting
+  shortcut someone might infer from the story. None should be obviously absurd or unrelated.
+- If learnerProfile.misconceptions includes wrongAnswer text from a prior beat, do NOT repeat that exact
+  wrong option — but DO craft distractors that resemble real mistakes for THIS concept.
+- Avoid: joke options, "none of the above," options that are clearly silly, or options that repeat the
+  question wording verbatim.
+- The correct option should require understanding the concept, not just remembering a character name.
 - Return options as objects: { "label": "visible text", "correct": true|false } — never bare strings.
-- The checkpoint still tests checkpointFocus, but only through story language.
-- "feedbackCorrect": ONE sentence (max 25 words) — plain language, explains why the correct option fits
-  (may name the concept from checkpointFocus; no "Correct!" or grading tone).
-- "feedbackIncorrect": ONE sentence (max 25 words) — explains why a wrong pick misses the mark and
-  states the right idea; supportive, not punitive.
+- "feedbackCorrect": ONE sentence (max 25 words) — names the concept from checkpointFocus in plain language.
+- "feedbackIncorrect": ONE sentence (max 25 words) — explains why the tempting wrong choice fails and states the right idea.
 
 scaffoldAdjustment may be one of:
 - null (no change needed)
@@ -231,6 +284,58 @@ Good example (subject=printify, genre=fantasy):
 Bad example (NEVER generate this):
   "Which element is most important in a fantasy world?"`.trim();
 
+const validateTopicSystemPrompt = `
+You are SpellPath's topic gate. Decide whether a learner's topic is suitable for an AI-generated educational story.
+
+You receive: subject (required), genre, optional learningGoals, optional learningFocus, optional authorStyle.
+
+Return ONLY JSON:
+{
+  "status": "accept" | "clarify" | "reject",
+  "category": "standard" | "heritage" | "niche" | "unknown",
+  "normalizedSubject": "cleaned topic label for display, or empty to keep original",
+  "reason": "one friendly sentence for the learner",
+  "suggestions": ["optional rewrite examples", "..."],
+  "authorStyleCheck": {
+    "status": "accept" | "warn" | "skip",
+    "reason": "one sentence if warn — empty if accept",
+    "suggestedGenre": "fantasy | scifi | mystery | horror | adventure | null"
+  }
+}
+
+If authorStyle is empty, set authorStyleCheck.status to "skip" and omit reason.
+
+If authorStyle is provided, assess whether that author's prose style plausibly fits the selected genre:
+- accept: good fit (e.g. Marion Zimmer Bradley + fantasy, Agatha Christie + mystery)
+- warn: weak fit (e.g. hard sci-fi author + fantasy, horror author + adventure) — explain gently and suggest a better genre or similar author
+- Do NOT reject the whole topic because of author mismatch — only warn in authorStyleCheck
+
+Decision rules (bias toward clarify over reject when uncertain):
+
+REJECT only when:
+- Unreadable garbage, keyboard mash, empty meaning, obvious joke nonsense with no learnable anchor
+- Hateful, violent, racist, sexist, harassing, or sexual content — or content whose purpose is harm, not learning
+- Clearly not an educational topic (e.g. slurs, "how to hurt someone")
+
+CLARIFY when:
+- Real but too vague: "history", "science", "business", "my family" without specifics
+- Heritage/genealogy/clan/family name topics WITHOUT specific learningGoals (category should be "heritage")
+- Obscure topic where intent is unclear
+- Provide 2–3 helpful suggestions in suggestions[]
+
+ACCEPT when:
+- Clear skill, tool, school subject, or well-scoped topic
+- learningGoals (≥12 chars) makes a vague topic specific enough
+- Heritage topics WITH specific learningGoals (e.g. "Clan Munro documented history", "how to research our surname")
+
+Categories:
+- "heritage" — family, clan, ancestry, genealogy, surname origins, "my roots"
+- "niche" — obscure tools, very specific subtopics with limited public documentation
+- "standard" — most topics
+- "unknown" — unclear
+
+Keep reason warm and concise. Never preachy.`.trim();
+
 // Legacy prompt (kept for backward-compat /api/generate endpoint)
 const legacySystemPrompt = `
 You are StoryPath, an educator who builds short, adaptive learning stories.
@@ -252,7 +357,55 @@ Tone and imagery should match the genre and mode (day/night). Keep content safe 
 // Routes
 // ---------------------------------------------------------------------------
 
-app.post('/api/intake', async (req, res) => {
+app.get('/api/auth/me', requireAuth, (req, res) => {
+  if (!authConfig.authRequired) {
+    return res.json({ authRequired: false });
+  }
+  return res.json({
+    authRequired: true,
+    user: {
+      email: req.spellpathUser.email,
+      name: req.spellpathUser.name,
+      picture: req.spellpathUser.picture,
+    },
+  });
+});
+
+app.post('/api/validate-topic', requireAuth, async (req, res) => {
+  try {
+    const { subject, learningGoals, learningFocus, genre, authorStyle } = req.body || {};
+    if (!subject || !String(subject).trim()) {
+      return res.status(400).json({ error: 'Missing required field: subject' });
+    }
+
+    const parsed = await callLLM(req, 'validate-topic', {
+      systemPrompt: validateTopicSystemPrompt,
+      userPayload: {
+        subject: String(subject).trim(),
+        genre: genre || 'adventure',
+        learningGoals: learningGoals || '',
+        learningFocus: learningFocus || '',
+        authorStyle: authorStyle || '',
+      },
+      maxTokens: 400,
+      temperature: 0.2,
+    });
+
+    return res.json(
+      normalizeTopicValidation(parsed, {
+        subject: String(subject).trim(),
+        learningGoals: learningGoals || '',
+        authorStyle: authorStyle || '',
+        genre: genre || 'adventure',
+      }),
+    );
+  } catch (err) {
+    console.error('Topic validation error:', err);
+    res.status(err.status || 500).json({ error: err.message || 'Topic validation failed' });
+  }
+});
+
+app.post('/api/intake', requireAuth, async (req, res) => {
   try {
     const { subject, genre, age, level, motivation, learningGoals, learningFocus } = req.body || {};
     if (!subject) {
@@ -286,9 +439,9 @@ app.post('/api/intake', async (req, res) => {
 // POST /api/scaffold
 // ---------------------------------------------------------------------------
 
-app.post('/api/scaffold', async (req, res) => {
+app.post('/api/scaffold', requireAuth, async (req, res) => {
   try {
-    const { subject, genre, mode, level, age, motivation, learningGoals, learningFocus, answers } =
+    const { subject, genre, mode, level, age, motivation, learningGoals, learningFocus, answers, topicCategory, authorStyle } =
       req.body || {};
     if (!subject || !genre || !mode) {
       return res.status(400).json({ error: 'Missing required fields: subject, genre, mode' });
@@ -305,13 +458,21 @@ app.post('/api/scaffold', async (req, res) => {
         motivation: motivation || 'curious',
         learningFocus: learningFocus || 'general',
         learningGoals: learningGoals || '',
+        topicCategory: topicCategory || 'standard',
+        authorStyle: authorStyle || '',
+        genreVoice: genreVoicePromptBlock(genre),
+        authorStyleGuide: authorStylePromptBlock(authorStyle),
         answers: answers || [],
       },
       maxTokens: 1500,
       temperature: 0.5,
     });
 
-    return res.json(parsed);
+    return res.json({
+      ...parsed,
+      topicCategory: topicCategory || parsed?.topicCategory || 'standard',
+      authorStyle: authorStyle || '',
+    });
   } catch (err) {
     console.error('Scaffold generation error:', err);
     res.status(err.status || 500).json({ error: err.message || 'Scaffold generation failed' });
@@ -322,13 +483,14 @@ app.post('/api/scaffold', async (req, res) => {
 // POST /api/beat
 // ---------------------------------------------------------------------------
 
-app.post('/api/beat', async (req, res) => {
+app.post('/api/beat', requireAuth, async (req, res) => {
   try {
     const {
       scaffold,
       currentBeat,
       learnerProfile,
       storySoFar,
+      recentCheckpoints,
       genre,
       mode,
       beatIndex,
@@ -344,8 +506,12 @@ app.post('/api/beat', async (req, res) => {
       currentBeat,
       learnerProfile: learnerProfile || {},
       storySoFar: storySoFar || [],
+      recentCheckpoints: recentCheckpoints || [],
       genre: genre || scaffold.theme?.genre,
       mode: mode || scaffold.theme?.mode,
+      authorStyle: scaffold?.authorStyle || '',
+      genreVoice: genreVoicePromptBlock(genre || scaffold.theme?.genre || 'adventure'),
+      authorStyleGuide: authorStylePromptBlock(scaffold?.authorStyle),
       beatIndex: Number.isFinite(beatIndex) ? beatIndex : 0,
       totalBeats: Number.isFinite(totalBeats) ? totalBeats : scaffold?.beats?.length ?? 0,
       previousNarrativeOpening:
@@ -382,7 +548,7 @@ app.post('/api/beat', async (req, res) => {
 // Legacy endpoint (kept for backward compatibility)
 // ---------------------------------------------------------------------------
 
-app.post('/api/generate', async (req, res) => {
+app.post('/api/generate', requireAuth, async (req, res) => {
   try {
     const { subject, genre, mode, answers } = req.body || {};
     if (!subject || !genre || !mode) {
@@ -414,6 +580,8 @@ app.get('/api/health', (_req, res) => {
   const keys = getPlatformKeyStatus();
   return res.json({
     ok: true,
+    authRequired: authConfig.authRequired,
+    allowlistConfigured: authConfig.allowlist.size > 0,
     byokAllowed: process.env.SPELLPATH_ALLOW_BYOK !== 'false',
     platformKeyConfigured: keys.openai,
     providers: {

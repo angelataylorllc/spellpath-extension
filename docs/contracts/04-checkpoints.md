@@ -6,34 +6,33 @@ Gauge understanding and adapt the path in real time.
 
 The AI must:
 
-- Ask questions that test conceptual grasp, not trivia recall.
-- Provide exactly three options, with exactly one correct answer.
-- Include `feedbackCorrect` and `feedbackIncorrect` — one sentence each, shown after the learner locks in a choice.
-- Include an optional `hint` as fallback (legacy).
+- Ask questions that test **conceptual grasp** of `checkpointFocus`, not trivia or story recall.
+- Provide exactly three options; exactly one correct.
+- **Wrong options** must be plausible — common misconceptions, partial truths, or tempting shortcuts — never obviously silly.
+- Include `feedbackCorrect` and `feedbackIncorrect` — one sentence each, shown after lock-in.
+- Name the concept plainly in feedback (not "Correct!").
 
 The engine uses the learner's response to:
 
 - Update `learnerProfile.confirmedUnderstandings` (correct answers)
-- Update `learnerProfile.misconceptions` (incorrect answers, tagged with the beat's concept)
-- Inform the next beat's narrative — misconceptions are addressed through story, not lecture.
+- Update `learnerProfile.misconceptions` with `{ concept, beatIndex, wrongAnswer }` (incorrect answers)
+- Pass `recentCheckpoints` to the next beat so the narrative can adapt
+- Show an adaptation notice after incorrect answers (revisit vs. extra practice beat)
 
 # Current Implementation
 
-Checkpoints are interactive multiple-choice rendered by `StoryBeat.jsx`. The learner selects an option, submits ("Lock in your choice"), and sees immediate visual feedback (correct/incorrect highlighting) plus a one-sentence explanation (`feedbackCorrect` or `feedbackIncorrect`).
-
-Free-text reasoning input ("explain your thinking") is planned for a future iteration and will enrich the learner profile with reasoning patterns, not just right/wrong signals.
+Checkpoints are interactive multiple-choice rendered by `StoryBeat.jsx`. The learner selects an option, submits ("Lock in your choice"), and sees visual feedback plus one-sentence explanation.
 
 # Constraints
 
-- No grading language.
-- No "correct/incorrect" framing in the narrative — the story handles corrections.
+- No grading language in the narrative.
 - One checkpoint per beat.
-- No punishment loops — a wrong answer shifts the scaffold, it does not trap the learner.
+- No punishment loops — a wrong answer informs the next beat, it does not trap the learner.
 
 # Output
 
 Updated internal state (managed by `StoryEngine`):
 
 - `confirmedUnderstandings` — concepts the learner has demonstrated grasp of
-- `misconceptions` — concepts where the learner's answer was incorrect, with beat index
+- `misconceptions` — wrong answers with the selected label for adaptation
 - `scaffoldAdjustment` — optional adjustment suggested by the AI (insert, annotate, skip)

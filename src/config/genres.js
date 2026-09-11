@@ -4,7 +4,7 @@ export const STORY_GENRES = [
     name: "Fantasy",
     icon: "🧙‍♂️",
     theme: "fantasy",
-    description: "Magical quests and enchanted knowledge",
+    description: "Myth, magic, and wonder — history and ideas through enchanted frames",
   },
   {
     id: "scifi",

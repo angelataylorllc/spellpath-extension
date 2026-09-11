@@ -6,6 +6,7 @@ import {
   LLM_PROVIDERS,
 } from './apiCredentials';
 import { normalizeQuotes } from '../../lib/normalizeQuotes.js';
+import { getAuthorizationHeader } from './auth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
@@ -47,6 +48,9 @@ async function spellpathPost(path, body) {
       headers.set(SPELLPATH_OPENAI_BYOK_HEADER, creds.apiKey);
     }
   }
+
+  const authHeader = await getAuthorizationHeader();
+  if (authHeader) headers.set('Authorization', authHeader);
 
   return fetch(`${API_BASE}${path}`, {
     method: 'POST',
@@ -104,6 +108,20 @@ function normalizeBeatClient(beat) {
     return { ...beat, narrative: normalizeQuotes(beat.narrative) };
   }
   return beat;
+}
+
+export async function validateTopic(payload) {
+  try {
+    const response = await spellpathPost('/api/validate-topic', payload);
+
+    if (!response.ok) {
+      throw new Error(await parseApiError(response));
+    }
+
+    return await response.json();
+  } catch (err) {
+    throw wrapFetchError(err);
+  }
 }
 
 export async function generateIntakeQuestions(payload) {

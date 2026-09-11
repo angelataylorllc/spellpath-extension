@@ -56,9 +56,21 @@ function normalizeOptions(checkpoint) {
   return options;
 }
 
+/** Fisher–Yates shuffle so the correct option is not always first in the UI. */
+function shuffleOptions(options) {
+  if (!Array.isArray(options) || options.length < 2) return options;
+
+  const shuffled = [...options];
+  for (let i = shuffled.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 function normalizeCheckpoint(checkpoint) {
   if (!checkpoint || typeof checkpoint !== 'object') return checkpoint;
-  const options = normalizeOptions(checkpoint);
+  const options = shuffleOptions(normalizeOptions(checkpoint));
 
   return {
     ...checkpoint,
