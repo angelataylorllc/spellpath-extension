@@ -1,0 +1,1191 @@
+/* Genre day/night atmospheres. Tokens stay in theme-tokens.css. */
+/* Full-viewport genre atmosphere (fixed behind all content) */
+.scene__atmosphere {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+:root[data-theme="fantasy"] .scene__atmosphere,
+:root[data-theme="scifi"] .scene__atmosphere,
+:root[data-theme="adventure"] .scene__atmosphere,
+:root[data-theme="mystery"] .scene__atmosphere,
+:root[data-theme="horror"] .scene__atmosphere {
+  display: block;
+}
+
+.scene__atmosphere::before,
+.scene__atmosphere::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  will-change: transform, background-position, opacity;
+}
+
+/* Campfire sits above story cards but tucked in the bottom-left corner */
+.scene__campfire {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+
+:root[data-theme="adventure"][data-mode="night"] .scene__campfire {
+  display: block;
+}
+
+/* Fantasy day — parchment base + warm drift + breeze motes */
+:root[data-theme="fantasy"][data-mode="day"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene__atmosphere {
+  background: linear-gradient(175deg, #faf3ea 0%, var(--color-bg) 45%, #ebe0d0 100%);
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene__atmosphere::before {
+  opacity: 0.9;
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(ellipse 50% 38% at 20% 18%, color-mix(in srgb, var(--color-highlight) 55%, transparent), transparent 58%),
+    radial-gradient(ellipse 48% 36% at 78% 72%, color-mix(in srgb, var(--color-accent-soft) 48%, transparent), transparent 55%),
+    radial-gradient(ellipse 42% 32% at 52% 12%, color-mix(in srgb, #e8c878 65%, transparent), transparent 52%);
+  background-size: 260% 260%;
+  background-repeat: no-repeat;
+  animation-name: fantasy-day-drift;
+  animation-duration: 18s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene__atmosphere::after {
+  opacity: 0.7;
+  background-image:
+    radial-gradient(ellipse 90px 28px at 10% 35%, rgba(212, 168, 67, 0.28), transparent 72%),
+    radial-gradient(ellipse 110px 22px at 45% 65%, rgba(192, 128, 161, 0.2), transparent 70%),
+    radial-gradient(ellipse 75px 26px at 78% 25%, rgba(234, 210, 160, 0.32), transparent 68%),
+    radial-gradient(ellipse 95px 24px at 28% 82%, rgba(212, 168, 67, 0.22), transparent 70%),
+    radial-gradient(2px 2px at 14% 22%, rgba(139, 100, 60, 0.55), transparent),
+    radial-gradient(1.75px 1.75px at 32% 48%, rgba(139, 100, 60, 0.45), transparent),
+    radial-gradient(2px 2px at 50% 18%, rgba(180, 130, 50, 0.5), transparent),
+    radial-gradient(1.75px 1.75px at 68% 58%, rgba(139, 100, 60, 0.42), transparent),
+    radial-gradient(2px 2px at 84% 38%, rgba(180, 130, 50, 0.48), transparent),
+    radial-gradient(1.75px 1.75px at 22% 74%, rgba(139, 100, 60, 0.4), transparent),
+    radial-gradient(2px 2px at 58% 88%, rgba(180, 130, 50, 0.45), transparent);
+  background-size: 300px 300px;
+  background-repeat: repeat;
+  animation-name: fantasy-day-breeze;
+  animation-duration: 32s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 55%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    0 0 0 1px color-mix(in srgb, var(--color-accent-soft) 20%, transparent);
+}
+
+:root[data-theme="fantasy"][data-mode="day"] .scene .genre-card:not(.story-narrative) {
+  background-image: none;
+  background-color: var(--genre-card-surface);
+}
+
+/* Sci-Fi day — hull interior + holographic drift + data motes */
+:root[data-theme="scifi"][data-mode="day"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="scifi"][data-mode="day"] .scene__atmosphere {
+  background: linear-gradient(175deg, #eef3f7 0%, var(--color-bg) 45%, #d4dce4 100%);
+}
+
+:root[data-theme="scifi"][data-mode="day"] .scene__atmosphere::before {
+  opacity: 0.88;
+  background:
+    radial-gradient(ellipse 50% 38% at 20% 18%, color-mix(in srgb, var(--color-accent) 48%, transparent), transparent 58%),
+    radial-gradient(ellipse 48% 36% at 78% 72%, color-mix(in srgb, var(--color-accent-soft) 32%, transparent), transparent 55%),
+    radial-gradient(ellipse 42% 32% at 52% 12%, color-mix(in srgb, var(--color-highlight) 38%, transparent), transparent 52%);
+  background-size: 260% 260%;
+  background-repeat: no-repeat;
+  animation-name: fantasy-day-drift;
+  animation-duration: 20s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+:root[data-theme="scifi"][data-mode="day"] .scene__atmosphere::after {
+  opacity: 0.62;
+  background-image:
+    radial-gradient(ellipse 120px 3px at 12% 35%, rgba(74, 144, 164, 0.32), transparent 72%),
+    radial-gradient(ellipse 140px 2px at 58% 68%, rgba(123, 63, 97, 0.22), transparent 70%),
+    radial-gradient(ellipse 100px 3px at 82% 22%, rgba(74, 144, 164, 0.26), transparent 68%),
+    radial-gradient(1.5px 1.5px at 14% 22%, rgba(74, 144, 164, 0.65), transparent),
+    radial-gradient(1.5px 1.5px at 32% 48%, rgba(123, 63, 97, 0.5), transparent),
+    radial-gradient(2px 2px at 50% 18%, rgba(74, 144, 164, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 68% 58%, rgba(192, 160, 96, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 84% 38%, rgba(74, 144, 164, 0.58), transparent),
+    radial-gradient(2px 2px at 22% 74%, rgba(123, 63, 97, 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 58% 88%, rgba(74, 144, 164, 0.52), transparent);
+  background-size: 280px 280px;
+  background-repeat: repeat;
+  animation-name: fantasy-day-breeze;
+  animation-duration: 30s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+:root[data-theme="scifi"][data-mode="day"] .scene .genre-card {
+  background-color: var(--genre-card-surface);
+  background-image: none;
+  color: var(--color-text);
+  border-color: color-mix(in srgb, var(--color-accent) 50%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+/* Adventure day — clear sky over red-clay desert */
+:root[data-theme="adventure"][data-mode="day"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="adventure"][data-mode="day"] .scene__atmosphere {
+  background:
+    linear-gradient(
+      180deg,
+      #3d8fd9 0%,
+      #6eb5ea 14%,
+      #a8d4f0 32%,
+      #e8dcc8 52%,
+      #d4956a 68%,
+      #c46845 82%,
+      #a84e32 92%,
+      #8f3f28 100%
+    );
+}
+
+/* Blazing sun + heat shimmer + airborne dust */
+:root[data-theme="adventure"][data-mode="day"] .scene__atmosphere::before {
+  opacity: 1;
+  mix-blend-mode: normal;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(255, 252, 235, 0.98) 0%, rgba(255, 228, 140, 0.72) 7%, rgba(255, 190, 80, 0.28) 16%, transparent 28%),
+    radial-gradient(ellipse 90% 35% at 50% 88%, rgba(160, 70, 40, 0.32), transparent 58%),
+    radial-gradient(ellipse 55% 18% at 22% 74%, rgba(255, 210, 130, 0.22), transparent 52%),
+    radial-gradient(ellipse 48% 14% at 68% 68%, rgba(255, 200, 120, 0.18), transparent 50%),
+    radial-gradient(2px 2px at 14% 42%, rgba(255, 230, 180, 0.7), transparent),
+    radial-gradient(1.75px 1.75px at 38% 28%, rgba(255, 210, 150, 0.62), transparent),
+    radial-gradient(2px 2px at 62% 36%, rgba(255, 225, 170, 0.68), transparent),
+    radial-gradient(1.75px 1.75px at 78% 22%, rgba(255, 215, 160, 0.58), transparent),
+    radial-gradient(2px 2px at 48% 52%, rgba(255, 200, 140, 0.55), transparent),
+    radial-gradient(1.75px 1.75px at 26% 58%, rgba(255, 210, 150, 0.5), transparent);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 320px 320px, 320px 320px, 320px 320px, 320px 320px, 320px 320px, 320px 320px;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat, repeat, repeat, repeat, repeat, repeat;
+  animation-name: adventure-sun-drift;
+  animation-duration: 24s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Soft ground shadow */
+:root[data-theme="adventure"][data-mode="day"] .scene__atmosphere::after {
+  opacity: 0.45;
+  background-image:
+    radial-gradient(ellipse 100% 10% at 50% 100%, rgba(70, 38, 22, 0.35), transparent 72%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+:root[data-theme="adventure"][data-mode="day"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 55%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 20%, transparent);
+}
+
+/* Mystery day — vintage case file + drifting fog */
+:root[data-theme="mystery"][data-mode="day"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="mystery"][data-mode="day"] .scene__atmosphere {
+  background: linear-gradient(180deg, #a8a090 0%, #ccc4b4 30%, var(--color-bg) 55%, #b8ae9e 100%);
+}
+
+/* Cloud bank — soft gray haze puffs, slow drift */
+:root[data-theme="mystery"][data-mode="day"] .scene__atmosphere::before {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse 48% 32% at 22% 35%, rgba(245, 242, 235, 0.92), transparent 66%),
+    radial-gradient(ellipse 44% 28% at 58% 22%, rgba(230, 225, 215, 0.85), transparent 63%),
+    radial-gradient(ellipse 50% 34% at 78% 58%, rgba(210, 205, 195, 0.78), transparent 68%),
+    radial-gradient(ellipse 42% 28% at 35% 72%, rgba(46, 64, 87, 0.42), transparent 60%),
+    radial-gradient(ellipse 46% 30% at 68% 78%, rgba(235, 230, 220, 0.82), transparent 64%);
+  background-size: 150% 150%;
+  background-repeat: no-repeat;
+  animation-name: mystery-cloud-drift;
+  animation-duration: 28s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Lower haze layer — slate mist between clouds */
+:root[data-theme="mystery"][data-mode="day"] .scene__atmosphere::after {
+  opacity: 0.92;
+  background:
+    radial-gradient(ellipse 58% 36% at 45% 48%, rgba(46, 64, 87, 0.34), transparent 66%),
+    radial-gradient(ellipse 54% 32% at 18% 62%, rgba(106, 81, 57, 0.3), transparent 63%),
+    radial-gradient(ellipse 52% 34% at 82% 38%, rgba(46, 64, 87, 0.26), transparent 60%),
+    radial-gradient(ellipse 60% 38% at 55% 28%, rgba(180, 175, 165, 0.35), transparent 65%);
+  background-size: 160% 160%;
+  background-repeat: no-repeat;
+  animation-name: mystery-haze-drift;
+  animation-duration: 34s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate-reverse;
+}
+
+:root[data-theme="mystery"][data-mode="day"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 45%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 18%, transparent);
+}
+
+/* Horror day — pale clinical light + dripping blood */
+:root[data-theme="horror"][data-mode="day"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene__atmosphere {
+  background: linear-gradient(180deg, #f6f6f6 0%, var(--color-bg) 42%, #e4e4e4 100%);
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene__atmosphere::before {
+  opacity: 0.93;
+  mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(circle 6px at 9% 0, rgba(139, 0, 0, 0.9), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.78) 0%, rgba(115, 0, 0, 0.52) 78%, rgba(139, 0, 0, 0.18) 96%, transparent 100%),
+    radial-gradient(circle 5px at 27% 0, rgba(120, 0, 0, 0.85), transparent 72%),
+    linear-gradient(180deg, rgba(120, 0, 0, 0.72) 0%, rgba(95, 0, 0, 0.48) 82%, transparent 100%),
+    radial-gradient(circle 6px at 51% 0, rgba(139, 0, 0, 0.92), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.8) 0%, rgba(110, 0, 0, 0.55) 75%, rgba(90, 0, 0, 0.12) 98%, transparent 100%),
+    radial-gradient(circle 5px at 73% 0, rgba(100, 0, 0, 0.82), transparent 72%),
+    linear-gradient(180deg, rgba(100, 0, 0, 0.68) 0%, rgba(85, 0, 0, 0.42) 88%, transparent 100%);
+  background-size:
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%;
+  background-position:
+    0 0, 9% 0,
+    0 0, 27% 0,
+    0 0, 51% 0,
+    0 0, 73% 0;
+  background-repeat: no-repeat;
+  animation: horror-drip-grow-a 20s ease-in infinite;
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene__atmosphere::after {
+  opacity: 0.88;
+  mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(circle 5px at 14% 0, rgba(139, 0, 0, 0.88), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.74) 0%, rgba(110, 0, 0, 0.5) 80%, transparent 100%),
+    radial-gradient(circle 5px at 38% 0, rgba(120, 0, 0, 0.85), transparent 72%),
+    linear-gradient(180deg, rgba(120, 0, 0, 0.7) 0%, rgba(95, 0, 0, 0.46) 82%, transparent 100%),
+    radial-gradient(circle 6px at 62% 0, rgba(139, 0, 0, 0.9), transparent 72%),
+    linear-gradient(180deg, rgba(139, 0, 0, 0.76) 0%, rgba(110, 0, 0, 0.52) 78%, rgba(139, 0, 0, 0.16) 96%, transparent 100%),
+    radial-gradient(circle 5px at 86% 0, rgba(100, 0, 0, 0.82), transparent 72%),
+    linear-gradient(180deg, rgba(100, 0, 0, 0.66) 0%, rgba(85, 0, 0, 0.4) 88%, transparent 100%);
+  background-size:
+    100% 100%, 4px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%;
+  background-position:
+    0 0, 14% 0,
+    0 0, 38% 0,
+    0 0, 62% 0,
+    0 0, 86% 0;
+  background-repeat: no-repeat;
+  animation: horror-drip-grow-b 26s ease-in 5s infinite;
+}
+
+:root[data-theme="horror"][data-mode="day"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent-soft) 50%, #ffffff);
+  box-shadow:
+    var(--card-shadow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 0 1px color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+/* ============================================
+   FANTASY ATMOSPHERE
+   ============================================ */
+
+@keyframes fantasy-day-drift {
+  0% { background-position: 0% 10%; }
+  100% { background-position: 100% 90%; }
+}
+
+@keyframes fantasy-day-breeze {
+  0% { background-position: 0 0; }
+  100% { background-position: 300px 80px; }
+}
+
+@keyframes fantasy-night-nebula {
+  0% { background-position: 0% 25%; }
+  100% { background-position: 100% 75%; }
+}
+
+@keyframes fantasy-night-stars-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 260px 520px; }
+}
+
+@keyframes fantasy-twinkle {
+  0%, 100% { opacity: 0.72; }
+  50% { opacity: 1; }
+}
+
+@keyframes fantasy-card-glow {
+  0% { box-shadow: var(--card-shadow), 0 0 20px color-mix(in srgb, var(--effect-glow) 40%, transparent); }
+  100% { box-shadow: var(--card-shadow), 0 0 36px color-mix(in srgb, var(--effect-glow) 70%, transparent); }
+}
+
+@keyframes fantasy-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+@keyframes story-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes story-loading-pulse {
+  0%, 100% { transform: scaleX(0.25); opacity: 0.4; }
+  50% { transform: scaleX(1); opacity: 1; }
+}
+
+/* Fantasy night — nebula drift + dense star field on full viewport layer */
+:root[data-theme="fantasy"][data-mode="night"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere {
+  background: linear-gradient(180deg, #120228 0%, var(--color-bg) 45%, #0a0118 100%);
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::before {
+  background:
+    radial-gradient(ellipse 100% 70% at 50% -15%, color-mix(in srgb, var(--color-accent) 55%, transparent), transparent 58%),
+    radial-gradient(ellipse 55% 45% at 85% 65%, color-mix(in srgb, var(--color-accent-soft) 28%, transparent), transparent),
+    radial-gradient(ellipse 40% 35% at 10% 80%, color-mix(in srgb, var(--color-highlight) 22%, transparent), transparent),
+    radial-gradient(ellipse 35% 30% at 70% 25%, color-mix(in srgb, var(--color-accent) 18%, transparent), transparent);
+  background-size: 240% 240%;
+  background-repeat: no-repeat;
+  animation-name: fantasy-night-nebula;
+  animation-duration: 26s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::after {
+  opacity: 0.92;
+  background-image:
+    radial-gradient(1.75px 1.75px at 8% 12%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(1.25px 1.25px at 18% 38%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(2px 2px at 28% 22%, rgba(255, 214, 138, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 38% 58%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 48% 14%, rgba(180, 225, 228, 0.8), transparent),
+    radial-gradient(1.25px 1.25px at 58% 72%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(2px 2px at 68% 34%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 78% 52%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 88% 18%, rgba(255, 214, 138, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 12% 68%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.75px 1.75px at 22% 82%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 32% 48%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 42% 88%, rgba(180, 225, 228, 0.7), transparent),
+    radial-gradient(1.25px 1.25px at 52% 28%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(2px 2px at 62% 62%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(1.25px 1.25px at 72% 8%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 82% 78%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1.25px 1.25px at 92% 42%, rgba(255, 214, 138, 0.75), transparent);
+  background-size: 260px 260px;
+  background-repeat: repeat;
+  animation-name: fantasy-night-stars-drift, fantasy-twinkle;
+  animation-duration: 50s, 8s;
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: normal, alternate;
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene::before {
+  display: none;
+}
+
+:root[data-theme="fantasy"][data-mode="night"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  animation: fantasy-card-glow 5s ease-in-out infinite alternate;
+}
+
+:root[data-theme="fantasy"] .genre-title {
+  text-shadow: 0 0 24px color-mix(in srgb, var(--effect-glow) 50%, transparent);
+}
+
+/* ============================================
+   SCIFI ATMOSPHERE
+   ============================================ */
+
+/* Sci-Fi night — deep space nebula + drifting star field */
+:root[data-theme="scifi"][data-mode="night"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="scifi"][data-mode="night"] .scene__atmosphere {
+  background: linear-gradient(180deg, #060809 0%, var(--color-bg) 45%, #020304 100%);
+}
+
+:root[data-theme="scifi"][data-mode="night"] .scene__atmosphere::before {
+  background:
+    radial-gradient(ellipse 100% 70% at 50% -15%, color-mix(in srgb, var(--color-accent) 50%, transparent), transparent 58%),
+    radial-gradient(ellipse 55% 45% at 85% 65%, color-mix(in srgb, var(--color-accent-soft) 30%, transparent), transparent),
+    radial-gradient(ellipse 40% 35% at 10% 80%, color-mix(in srgb, var(--color-highlight) 18%, transparent), transparent),
+    radial-gradient(ellipse 35% 30% at 70% 25%, color-mix(in srgb, var(--color-accent) 22%, transparent), transparent);
+  background-size: 240% 240%;
+  background-repeat: no-repeat;
+  animation-name: fantasy-night-nebula;
+  animation-duration: 24s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+:root[data-theme="scifi"][data-mode="night"] .scene__atmosphere::after {
+  opacity: 0.9;
+  background-image:
+    radial-gradient(1.75px 1.75px at 8% 12%, rgba(30, 211, 232, 0.95), transparent),
+    radial-gradient(1.25px 1.25px at 18% 38%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(2px 2px at 28% 22%, rgba(255, 155, 47, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 38% 58%, rgba(30, 211, 232, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 48% 14%, rgba(214, 75, 140, 0.75), transparent),
+    radial-gradient(1.25px 1.25px at 58% 72%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(2px 2px at 68% 34%, rgba(30, 211, 232, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 78% 52%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.5px 1.5px at 88% 18%, rgba(255, 155, 47, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 12% 68%, rgba(30, 211, 232, 0.6), transparent),
+    radial-gradient(1.75px 1.75px at 22% 82%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 32% 48%, rgba(214, 75, 140, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 42% 88%, rgba(30, 211, 232, 0.65), transparent),
+    radial-gradient(1.25px 1.25px at 52% 28%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(2px 2px at 62% 62%, rgba(30, 211, 232, 0.95), transparent),
+    radial-gradient(1.25px 1.25px at 72% 8%, rgba(255, 155, 47, 0.75), transparent),
+    radial-gradient(1.5px 1.5px at 82% 78%, rgba(255, 255, 255, 0.8), transparent),
+    radial-gradient(1.25px 1.25px at 92% 42%, rgba(214, 75, 140, 0.7), transparent);
+  background-size: 260px 260px;
+  background-repeat: repeat;
+  animation-name: fantasy-night-stars-drift, fantasy-twinkle;
+  animation-duration: 48s, 8s;
+  animation-timing-function: linear, ease-in-out;
+  animation-iteration-count: infinite, infinite;
+  animation-direction: normal, alternate;
+}
+
+:root[data-theme="scifi"][data-mode="night"] .scene::before {
+  display: none;
+}
+
+:root[data-theme="scifi"][data-mode="night"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent) 50%, transparent);
+  animation: fantasy-card-glow 5s ease-in-out infinite alternate;
+}
+
+:root[data-theme="scifi"] .genre-title {
+  text-shadow: 0 0 20px color-mix(in srgb, var(--effect-glow) 55%, transparent);
+}
+
+:root[data-theme="scifi"] .story-narrative.genre-card {
+  background-color: color-mix(in srgb, var(--genre-card-surface) 18%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bg-alt) 22%, transparent),
+    color-mix(in srgb, var(--color-bg) 12%, transparent)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-theme="scifi"] .story-checkpoint {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--genre-card-surface) 45%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme="scifi"][data-mode="day"] .story-narrative.genre-card {
+  background-color: color-mix(in srgb, var(--genre-card-surface) 94%, #ffffff 6%);
+  background-image: none;
+}
+
+:root[data-theme="scifi"][data-mode="day"] .story-checkpoint {
+  background: color-mix(in srgb, var(--genre-card-surface) 96%, var(--color-accent) 4%);
+}
+
+:root[data-theme="scifi"][data-mode="day"] .story-loading__text,
+:root[data-theme="scifi"][data-mode="day"] .ui-font .ui-subtitle,
+:root[data-theme="scifi"][data-mode="day"] .ui-font .ui-meta {
+  color: color-mix(in srgb, var(--color-text) 88%, var(--color-accent) 12%);
+}
+
+:root[data-theme="scifi"][data-mode="night"] .story-dialogue-line,
+:root[data-theme="scifi"][data-mode="night"] .story-dialogue-inline {
+  color: var(--color-highlight);
+}
+
+/* ============================================
+   ADVENTURE ATMOSPHERE
+   ============================================ */
+
+@keyframes adventure-sun-drift {
+  0% { opacity: 0.96; }
+  100% { opacity: 1; }
+}
+
+@keyframes adventure-dust-drift {
+  0% { background-position: 0 0; }
+  100% { background-position: 300px 90px; }
+}
+
+@keyframes adventure-stars-twinkle {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.92; }
+}
+
+/* Adventure night layer stack (bottom → top):
+   1. body/#root fallback — deep navy
+   2. .scene__atmosphere — sky → canyon gradient (authoritative)
+   3. .scene__atmosphere::before — faint top-sky glow only (no ground overlay)
+   4. .scene__atmosphere::after — twinkling stars
+   5. .scene__campfire — fire (separate fixed layer, z-index 2)
+*/
+:root[data-theme="adventure"][data-mode="night"] body,
+:root[data-theme="adventure"][data-mode="night"] #root {
+  background: #050b14;
+}
+
+:root[data-theme="adventure"][data-mode="night"] .scene {
+  background: transparent;
+}
+
+:root[data-theme="adventure"][data-mode="night"] .scene__atmosphere {
+  isolation: isolate;
+  background:
+    linear-gradient(
+      180deg,
+      #030810 0%,
+      #060e1a 8%,
+      #0a1528 18%,
+      #0e1e38 30%,
+      #122840 42%,
+      #152f48 50%,
+      #1a3348 56%,
+      #223040 62%,
+      #2c3028 68%,
+      #382a20 74%,
+      #442418 80%,
+      #3a2014 86%,
+      #2C1B10 92%,
+      #140c06 100%
+    );
+}
+
+/* Top-sky depth only — must not cover the horizon gradient */
+:root[data-theme="adventure"][data-mode="night"] .scene__atmosphere::before {
+  z-index: 1;
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse 90% 50% at 50% -5%, rgba(40, 70, 110, 0.35), transparent 58%),
+    radial-gradient(ellipse 60% 35% at 20% 15%, rgba(25, 50, 85, 0.2), transparent 52%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+:root[data-theme="adventure"][data-mode="night"] .scene__atmosphere::after {
+  z-index: 2;
+  background-color: transparent;
+  clip-path: none;
+  mask-image: linear-gradient(180deg, #000 0%, #000 38%, rgba(0, 0, 0, 0.7) 58%, rgba(0, 0, 0, 0.25) 72%, transparent 88%);
+  -webkit-mask-image: linear-gradient(180deg, #000 0%, #000 38%, rgba(0, 0, 0, 0.7) 58%, rgba(0, 0, 0, 0.25) 72%, transparent 88%);
+  opacity: 0.88;
+  background-image:
+    radial-gradient(1.75px 1.75px at 6% 8%, rgba(255, 255, 255, 0.95), transparent),
+    radial-gradient(1.25px 1.25px at 14% 22%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(2px 2px at 22% 12%, rgba(255, 240, 210, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 30% 28%, rgba(255, 255, 255, 0.65), transparent),
+    radial-gradient(1.5px 1.5px at 38% 6%, rgba(255, 255, 255, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 46% 18%, rgba(255, 255, 255, 0.75), transparent),
+    radial-gradient(2px 2px at 54% 32%, rgba(255, 248, 220, 0.88), transparent),
+    radial-gradient(1.25px 1.25px at 62% 10%, rgba(255, 255, 255, 0.68), transparent),
+    radial-gradient(1.5px 1.5px at 70% 24%, rgba(255, 255, 255, 0.82), transparent),
+    radial-gradient(1.25px 1.25px at 78% 14%, rgba(255, 255, 255, 0.72), transparent),
+    radial-gradient(2px 2px at 86% 26%, rgba(255, 240, 210, 0.9), transparent),
+    radial-gradient(1.25px 1.25px at 94% 8%, rgba(255, 255, 255, 0.78), transparent),
+    radial-gradient(1.5px 1.5px at 10% 36%, rgba(255, 255, 255, 0.6), transparent),
+    radial-gradient(1.25px 1.25px at 20% 42%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.75px 1.75px at 34% 38%, rgba(255, 248, 220, 0.8), transparent),
+    radial-gradient(1.25px 1.25px at 48% 40%, rgba(255, 255, 255, 0.62), transparent),
+    radial-gradient(1.5px 1.5px at 58% 34%, rgba(255, 255, 255, 0.7), transparent),
+    radial-gradient(1.25px 1.25px at 68% 42%, rgba(255, 255, 255, 0.58), transparent),
+    radial-gradient(2px 2px at 80% 36%, rgba(255, 255, 255, 0.85), transparent),
+    radial-gradient(1.25px 1.25px at 90% 40%, rgba(255, 240, 210, 0.72), transparent),
+    radial-gradient(1.25px 1.25px at 8% 52%, rgba(255, 255, 255, 0.58), transparent),
+    radial-gradient(1.5px 1.5px at 18% 58%, rgba(255, 248, 220, 0.65), transparent),
+    radial-gradient(1.25px 1.25px at 28% 48%, rgba(255, 255, 255, 0.52), transparent),
+    radial-gradient(2px 2px at 42% 54%, rgba(255, 255, 255, 0.72), transparent),
+    radial-gradient(1.25px 1.25px at 56% 50%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1.5px 1.5px at 66% 56%, rgba(255, 240, 210, 0.62), transparent),
+    radial-gradient(1.25px 1.25px at 76% 48%, rgba(255, 255, 255, 0.5), transparent),
+    radial-gradient(1.75px 1.75px at 88% 52%, rgba(255, 255, 255, 0.68), transparent),
+    radial-gradient(1.25px 1.25px at 32% 62%, rgba(255, 255, 255, 0.48), transparent),
+    radial-gradient(1.5px 1.5px at 52% 60%, rgba(255, 248, 220, 0.55), transparent),
+    radial-gradient(1.25px 1.25px at 72% 62%, rgba(255, 255, 255, 0.45), transparent);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation-name: adventure-stars-twinkle;
+  animation-duration: 11s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+:root[data-theme="adventure"][data-mode="night"] .scene::before {
+  display: none;
+}
+
+:root[data-theme="adventure"][data-mode="night"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent) 48%, transparent);
+  animation: fantasy-card-glow 5s ease-in-out infinite alternate;
+}
+
+:root[data-theme="adventure"] .genre-title {
+  text-shadow: 0 0 20px color-mix(in srgb, var(--effect-glow) 55%, transparent);
+}
+
+:root[data-theme="adventure"] .story-narrative.genre-card {
+  background-color: color-mix(in srgb, var(--genre-card-surface) 18%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bg-alt) 22%, transparent),
+    color-mix(in srgb, var(--color-bg) 12%, transparent)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-theme="adventure"] .story-checkpoint {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--genre-card-surface) 45%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme="adventure"][data-mode="night"] .story-dialogue-line,
+:root[data-theme="adventure"][data-mode="night"] .story-dialogue-inline {
+  color: var(--color-highlight);
+}
+
+/* ============================================
+   MYSTERY ATMOSPHERE
+   ============================================ */
+
+@keyframes mystery-lamp-pulse {
+  0%, 100% { opacity: 0.88; }
+  50% { opacity: 1; }
+}
+
+@keyframes mystery-cloud-drift {
+  0% { background-position: 46% 48%; }
+  100% { background-position: 54% 52%; }
+}
+
+@keyframes mystery-haze-drift {
+  0% { background-position: 50% 50%; }
+  100% { background-position: 48% 54%; }
+}
+
+@keyframes mystery-rain-fall {
+  0% { background-position: 0 0; }
+  100% { background-position: 40px 220px; }
+}
+
+/* Mystery night — noir shadows + streetlamp glow + rain */
+:root[data-theme="mystery"][data-mode="night"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="mystery"][data-mode="night"] .scene__atmosphere {
+  background: linear-gradient(180deg, #0e0a08 0%, var(--color-bg) 42%, #161008 100%);
+}
+
+/* Streetlamp pools — fixed on screen, gentle ~1s brightness pulse */
+:root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::before {
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(ellipse 75% 55% at 24% 0%, rgba(212, 180, 131, 0.58), transparent 64%),
+    radial-gradient(ellipse 48% 42% at 76% 68%, rgba(166, 124, 82, 0.38), transparent 58%),
+    radial-gradient(ellipse 40% 34% at 10% 78%, rgba(212, 180, 131, 0.26), transparent 55%),
+    radial-gradient(ellipse 36% 30% at 58% 32%, rgba(255, 200, 120, 0.2), transparent 52%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation-name: mystery-lamp-pulse;
+  animation-duration: 1.1s;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  animation-direction: alternate;
+}
+
+/* Rain — continuous diagonal streaks, always visible */
+:root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::after {
+  opacity: 0.42;
+  background-image: repeating-linear-gradient(
+    108deg,
+    transparent 0 12px,
+    rgba(255, 255, 255, 0.09) 12px 13px,
+    transparent 13px 28px
+  );
+  background-size: 100px 100px;
+  background-repeat: repeat;
+  animation-name: mystery-rain-fall;
+  animation-duration: 5s;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+:root[data-theme="mystery"][data-mode="night"] .scene::before {
+  display: none;
+}
+
+:root[data-theme="mystery"][data-mode="night"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-highlight) 40%, transparent);
+  animation: fantasy-card-glow 5s ease-in-out infinite alternate;
+}
+
+:root[data-theme="mystery"] .genre-title {
+  text-shadow: 0 0 18px color-mix(in srgb, var(--effect-glow) 50%, transparent);
+}
+
+:root[data-theme="mystery"] .story-narrative.genre-card {
+  background-color: color-mix(in srgb, var(--genre-card-surface) 18%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bg-alt) 22%, transparent),
+    color-mix(in srgb, var(--color-bg) 12%, transparent)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-theme="mystery"] .story-checkpoint {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--genre-card-surface) 45%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme="mystery"][data-mode="night"] .story-dialogue-line,
+:root[data-theme="mystery"][data-mode="night"] .story-dialogue-inline {
+  color: var(--color-highlight);
+}
+
+/* ============================================
+   HORROR ATMOSPHERE
+   ============================================ */
+
+@keyframes horror-drip-grow-a {
+  0%, 4% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  14%, 22% {
+    background-size:
+      100% 100%, 5px 38%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  26%, 34% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 32%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  38%, 46% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 55%,
+      100% 100%, 5px 28%,
+      100% 100%, 4px 0%;
+  }
+  50%, 58% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 55%,
+      100% 100%, 5px 52%,
+      100% 100%, 4px 30%;
+  }
+  62%, 72% {
+    background-size:
+      100% 100%, 5px 62%,
+      100% 100%, 4px 55%,
+      100% 100%, 5px 52%,
+      100% 100%, 4px 58%;
+  }
+  94%, 100% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+}
+
+@keyframes horror-drip-grow-b {
+  0%, 6% {
+    background-size:
+      100% 100%, 4px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  18%, 26% {
+    background-size:
+      100% 100%, 4px 42%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  30%, 38% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 35%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  42%, 50% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 30%,
+      100% 100%, 4px 0%;
+  }
+  54%, 62% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 58%,
+      100% 100%, 4px 28%;
+  }
+  66%, 76% {
+    background-size:
+      100% 100%, 4px 55%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 58%,
+      100% 100%, 4px 56%;
+  }
+  96%, 100% {
+    background-size:
+      100% 100%, 4px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+}
+
+@keyframes horror-red-haze-drift {
+  0% {
+    transform: translate(-1.5%, 0.8%);
+    opacity: 0.78;
+  }
+  100% {
+    transform: translate(1.5%, -0.8%);
+    opacity: 0.92;
+  }
+}
+
+@keyframes horror-drip-grow-night {
+  0%, 4% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  10%, 16% {
+    background-size:
+      100% 100%, 5px 35%,
+      100% 100%, 4px 28%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  20%, 28% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 32%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  32%, 40% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  44%, 52% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 50%,
+      100% 100%, 4px 42%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+  56%, 64% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 50%,
+      100% 100%, 4px 42%,
+      100% 100%, 5px 38%,
+      100% 100%, 4px 0%;
+  }
+  68%, 76% {
+    background-size:
+      100% 100%, 5px 58%,
+      100% 100%, 4px 52%,
+      100% 100%, 5px 55%,
+      100% 100%, 4px 48%,
+      100% 100%, 5px 50%,
+      100% 100%, 4px 42%,
+      100% 100%, 5px 60%,
+      100% 100%, 4px 45%;
+  }
+  94%, 100% {
+    background-size:
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%,
+      100% 100%, 5px 0%,
+      100% 100%, 4px 0%;
+  }
+}
+
+/* Horror night — void black + cloudy crimson haze + black blood drips */
+:root[data-theme="horror"][data-mode="night"] .scene {
+  background: var(--color-bg);
+}
+
+:root[data-theme="horror"][data-mode="night"] .scene__atmosphere {
+  background:
+    radial-gradient(ellipse 90% 55% at 50% 100%, rgba(0, 0, 0, 0.5), transparent 62%),
+    radial-gradient(ellipse 45% 70% at 0% 50%, rgba(0, 0, 0, 0.38), transparent 58%),
+    radial-gradient(ellipse 45% 70% at 100% 50%, rgba(0, 0, 0, 0.38), transparent 58%),
+    linear-gradient(180deg, #060606 0%, var(--color-bg) 42%, #040404 100%);
+}
+
+/* Drifting crimson cloud haze */
+:root[data-theme="horror"][data-mode="night"] .scene__atmosphere::before {
+  mix-blend-mode: screen;
+  filter: blur(20px);
+  background:
+    radial-gradient(ellipse 95% 65% at 26% 28%, rgba(139, 0, 0, 0.42), transparent 72%),
+    radial-gradient(ellipse 88% 72% at 72% 48%, rgba(110, 0, 0, 0.36), transparent 70%),
+    radial-gradient(ellipse 100% 58% at 44% 72%, rgba(120, 0, 0, 0.3), transparent 68%),
+    radial-gradient(ellipse 82% 55% at 14% 58%, rgba(139, 0, 0, 0.26), transparent 66%),
+    radial-gradient(ellipse 78% 62% at 84% 80%, rgba(90, 0, 0, 0.24), transparent 64%),
+    radial-gradient(ellipse 70% 48% at 55% 18%, rgba(160, 20, 20, 0.18), transparent 62%);
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  animation: horror-red-haze-drift 42s ease-in-out infinite alternate;
+}
+
+/* Black blood drips — grow from top, same style as day */
+:root[data-theme="horror"][data-mode="night"] .scene__atmosphere::after {
+  opacity: 0.92;
+  mix-blend-mode: multiply;
+  background-image:
+    radial-gradient(circle 6px at 6% 0, rgba(0, 0, 0, 0.96), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(18, 0, 0, 0.68) 78%, rgba(0, 0, 0, 0.22) 96%, transparent 100%),
+    radial-gradient(circle 5px at 19% 0, rgba(0, 0, 0, 0.94), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.86) 0%, rgba(12, 0, 0, 0.62) 82%, transparent 100%),
+    radial-gradient(circle 6px at 32% 0, rgba(0, 0, 0, 0.95), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.88) 0%, rgba(15, 0, 0, 0.64) 75%, rgba(0, 0, 0, 0.14) 98%, transparent 100%),
+    radial-gradient(circle 5px at 45% 0, rgba(0, 0, 0, 0.93), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.84) 0%, rgba(10, 0, 0, 0.58) 85%, transparent 100%),
+    radial-gradient(circle 6px at 58% 0, rgba(0, 0, 0, 0.96), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.9) 0%, rgba(16, 0, 0, 0.66) 78%, rgba(0, 0, 0, 0.18) 96%, transparent 100%),
+    radial-gradient(circle 5px at 71% 0, rgba(0, 0, 0, 0.94), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(12, 0, 0, 0.6) 82%, transparent 100%),
+    radial-gradient(circle 6px at 84% 0, rgba(0, 0, 0, 0.95), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.87) 0%, rgba(14, 0, 0, 0.62) 80%, transparent 100%),
+    radial-gradient(circle 5px at 93% 0, rgba(0, 0, 0, 0.92), transparent 72%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.82) 0%, rgba(8, 0, 0, 0.55) 88%, transparent 100%);
+  background-size:
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%,
+    100% 100%, 5px 0%,
+    100% 100%, 4px 0%;
+  background-position:
+    0 0, 6% 0,
+    0 0, 19% 0,
+    0 0, 32% 0,
+    0 0, 45% 0,
+    0 0, 58% 0,
+    0 0, 71% 0,
+    0 0, 84% 0,
+    0 0, 93% 0;
+  background-repeat: no-repeat;
+  animation: horror-drip-grow-night 28s ease-in infinite;
+}
+
+:root[data-theme="horror"][data-mode="night"] .scene::before {
+  display: none;
+}
+
+:root[data-theme="horror"][data-mode="night"] .scene .genre-card {
+  border-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  animation: fantasy-card-glow 5s ease-in-out infinite alternate;
+}
+
+:root[data-theme="horror"] .genre-title {
+  text-shadow: 0 0 20px color-mix(in srgb, var(--effect-glow) 55%, transparent);
+}
+
+:root[data-theme="horror"] .story-narrative.genre-card {
+  background-color: color-mix(in srgb, var(--genre-card-surface) 18%, transparent);
+  background-image: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-bg-alt) 22%, transparent),
+    color-mix(in srgb, var(--color-bg) 12%, transparent)
+  );
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+:root[data-theme="horror"] .story-checkpoint {
+  position: relative;
+  z-index: 1;
+  background: color-mix(in srgb, var(--genre-card-surface) 45%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+:root[data-theme="horror"][data-mode="night"] .story-dialogue-line,
+:root[data-theme="horror"][data-mode="night"] .story-dialogue-inline {
+  color: color-mix(in srgb, var(--color-accent) 75%, #ffcccc);
+}
+
+:root[data-theme="horror"][data-mode="day"] .story-dialogue-line,
+:root[data-theme="horror"][data-mode="day"] .story-dialogue-inline {
+  color: var(--color-accent-soft);
+}
+
+
+/* Reduced motion — atmosphere / card glow only */
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::after,
+  :root[data-theme="scifi"][data-mode="night"] .scene__atmosphere::after,
+  :root[data-theme="adventure"][data-mode="night"] .scene__atmosphere::after,
+  :root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::before,
+  :root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::after,
+  :root[data-theme="horror"][data-mode="night"] .scene__atmosphere::before,
+  :root[data-theme="fantasy"][data-mode="night"] .scene .genre-card,
+  :root[data-theme="scifi"][data-mode="night"] .scene .genre-card,
+  :root[data-theme="mystery"][data-mode="night"] .scene .genre-card,
+  :root[data-theme="adventure"][data-mode="night"] .scene .genre-card,
+  :root[data-theme="horror"][data-mode="night"] .scene .genre-card {
+    animation: none !important;
+  }
+
+  :root[data-theme="fantasy"][data-mode="night"] .scene__atmosphere::after {
+    opacity: 0.92;
+  }
+
+  :root[data-theme="scifi"][data-mode="night"] .scene__atmosphere::after {
+    opacity: 0.9;
+  }
+
+  :root[data-theme="adventure"][data-mode="night"] .scene__atmosphere::after {
+    opacity: 0.75;
+  }
+
+  :root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::before {
+    opacity: 0.94;
+  }
+
+  :root[data-theme="mystery"][data-mode="night"] .scene__atmosphere::after {
+    opacity: 0.42;
+  }
+
+  :root[data-theme="horror"][data-mode="night"] .scene__atmosphere::before {
+    opacity: 0.85;
+  }
+}

@@ -89,23 +89,3 @@ export function getPlatformKeyStatus(env = process.env) {
     gemini: !!platformKeyForProvider('gemini', env),
   };
 }
-
-/** @deprecated Use resolveLLMForRequest */
-export function resolveOpenAIForRequest(req, env = process.env) {
-  const resolved = resolveLLMForRequest(req, env);
-  if (resolved.provider !== 'openai') {
-    return {
-      client: null,
-      billingSource: null,
-      error: 'Legacy OpenAI resolver called for a non-OpenAI provider.',
-    };
-  }
-  if (!resolved.apiKey) {
-    return { client: null, billingSource: null, error: resolved.error };
-  }
-  return {
-    client: null,
-    billingSource: resolved.billingSource,
-    _resolved: resolved,
-  };
-}

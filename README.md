@@ -36,34 +36,36 @@ npm install
 
 ### Development
 ```bash
-npm run dev          # Start development server with hot reload
-npm run build        # Build extension for production
-npm run build:byok   # Same as build — uses .env.production (api URL + byok edition)
-npm run preview      # Preview built extension
-npm run api          # Local SpellPath API. Copy `.env.example` → `.env`
+npm run api          # Local SpellPath API on localhost:4000. Copy `.env.example` → `.env`
+npm run build:local  # Extension talking to that local API
+npm run build        # Production URL (`https://api.spellpath.app` from `.env.production`)
+npm run build:byok   # Same as build — prod API + byok edition
+npm run dev          # Vite only; does not replace loading `dist/` in Chrome
+npm run preview      # Preview built files
 ```
 
-**Prod config:** `.env.production` holds `VITE_API_BASE`, `VITE_AUTH_REQUIRED`, and `VITE_GOOGLE_OAUTH_CLIENT_ID` (hostname/auth changes = edit that file + rebuild). Local `npm run api` uses `.env` (`SPELLPATH_AUTH_REQUIRED=false` until prod).
+**Local:** `npm run api` + `npm run build:local`, then reload the unpacked `dist/` extension. Auth and allowlist come from `.env` (`SPELLPATH_AUTH_REQUIRED`, `SPELLPATH_ALLOWLIST`). After UI changes, rebuild with `build:local` and reload Chrome. Restart the API only if you changed server files.
+
+**Prod config:** `.env.production` holds `VITE_API_BASE`, `VITE_AUTH_REQUIRED`, and `VITE_GOOGLE_OAUTH_CLIENT_ID` (hostname/auth changes = edit that file + `npm run build`). Do not use `npm run build` against a local API — it will call production and fail if that host is down.
 
 **Google sign-in (friend BYOK):** Google Cloud → OAuth client type **Chrome extension** → add extension ID from `chrome://extensions` → paste client ID into `.env.production` → `npm run build:byok`. Server: `SPELLPATH_AUTH_REQUIRED=true` and `SPELLPATH_ALLOWLIST=email1@...,email2@...`.
 
-**AI providers:** OpenAI, Anthropic (Claude), and Google Gemini. Set platform keys in `.env` and/or choose a provider + paste your key in **Settings** (BYOK). See `docs/ai-billing-and-byok.md`.
+**AI providers:** OpenAI, Anthropic (Claude), and Google Gemini. Set platform keys in `.env` and/or choose a provider + paste your key in **Settings** (BYOK). See `docs/ai-billing-and-byok.md`. Day-to-day commands: `cheat-sheet.md`.
 
 ### Testing the Extension
-1. Run `npm run build`
+1. Run `npm run api` and `npm run build:local`
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode"
-4. Click "Load unpacked" and select the `dist/` folder
+4. Click "Load unpacked" and select the `dist/` folder (Reload after later builds)
 5. Click the extension icon to test
 
 ### Project Structure
 ```
-src/
-├── components/      # React components
-├── services/        # Business logic and AI integration
-├── stories/         # Story templates and content generation
-├── stores/          # State management
-└── utils/           # Helper functions
+src/            # Chrome extension UI
+server/         # Express API, prompts, LLM adapters
+lib/            # Shared helpers (quotes, steer, author cards)
+docs/           # Contracts (working session notes stay local)
+extension/      # manifest, background, print (PDF)
 ```
 
 ## Future Roadmap

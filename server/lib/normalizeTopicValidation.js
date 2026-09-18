@@ -1,4 +1,5 @@
-import { AUTHOR_EXAMPLES } from '../../lib/genreVoice.js';
+import { findAuthorCard } from '../../lib/authorVoiceCards.js';
+import { AUTHOR_EXAMPLES, GENRE_VOICE } from '../../lib/genreVoice.js';
 
 const VALID_STATUS = new Set(['accept', 'clarify', 'reject']);
 const VALID_CATEGORY = new Set(['standard', 'heritage', 'niche', 'unknown']);
@@ -17,9 +18,22 @@ function cleanSuggestions(raw) {
     .slice(0, 4);
 }
 
+function genreLabel(genreId) {
+  return GENRE_VOICE[genreId]?.label || genreId;
+}
+
 function normalizeAuthorStyleCheck(parsed, { authorStyle, genre } = {}) {
   const author = cleanString(authorStyle, 120);
   if (!author) return null;
+
+  const card = findAuthorCard(author);
+  const genreId = cleanString(genre, 40);
+
+  // Our dropdown is source of truth. Never let the topic-gate model
+  // second-guess a name we already listed for this genre (e.g. Adams + sci-fi).
+  if (card && genreId && card.genres.includes(genreId)) {
+    return { status: 'accept', reason: '', suggestedGenre: null };
+  }
 
   const raw = parsed?.authorStyleCheck;
   if (!raw || typeof raw !== 'object') {
@@ -28,14 +42,21 @@ function normalizeAuthorStyleCheck(parsed, { authorStyle, genre } = {}) {
 
   let status = VALID_AUTHOR_STATUS.has(raw.status) ? raw.status : 'accept';
   let reason = cleanString(raw.reason, 300);
-  const suggestedGenre = cleanString(raw.suggestedGenre, 40) || null;
+  let suggestedGenre = cleanString(raw.suggestedGenre, 40) || null;
+
+  if (card && genreId && !card.genres.includes(genreId)) {
+    status = 'warn';
+    suggestedGenre = card.genres[0] || suggestedGenre;
+    const listed = card.genres.map(genreLabel).join(' or ');
+    reason = `"${card.name}" is on our ${listed} voice list. You can switch, or continue anyway.`;
+  }
 
   if (status === 'warn' && !reason) {
-    const examples = AUTHOR_EXAMPLES[genre] || 'another author in this genre';
+    const examples = AUTHOR_EXAMPLES[genreId] || 'another author in this genre';
     reason = `"${author}" may read better in a different story style. Try ${examples}, or continue anyway.`;
   }
 
-  if (status === 'warn' && suggestedGenre && suggestedGenre === genre) {
+  if (status === 'warn' && suggestedGenre && suggestedGenre === genreId) {
     status = 'accept';
     reason = '';
   }

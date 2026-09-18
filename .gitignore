@@ -25,3 +25,10 @@ dist-ssr
 .env
 .env.production
 .env.local
+
+# Expanded author-voice traits (not curated; do not commit)
+data/author-voice-cache.json
+data/author-voice-cache.json.tmp
+
+# Working session notes — local only
+docs/session-notes.md

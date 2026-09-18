@@ -5,7 +5,6 @@ import {
   PROVIDER_LABELS,
   LLM_PROVIDERS,
 } from './apiCredentials';
-import { normalizeQuotes } from '../../lib/normalizeQuotes.js';
 import { getAuthorizationHeader } from './auth';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
@@ -102,14 +101,6 @@ function mockIntakeQuestions({ subject, learningGoals }) {
   return { questions };
 }
 
-function normalizeBeatClient(beat) {
-  if (!beat || typeof beat !== 'object') return beat;
-  if (typeof beat.narrative === 'string') {
-    return { ...beat, narrative: normalizeQuotes(beat.narrative) };
-  }
-  return beat;
-}
-
 export async function validateTopic(payload) {
   try {
     const response = await spellpathPost('/api/validate-topic', payload);
@@ -161,7 +152,7 @@ export async function generateBeat(payload) {
       throw new Error(await parseApiError(response));
     }
 
-    return normalizeBeatClient(await response.json());
+    return await response.json();
   } catch (err) {
     throw wrapFetchError(err);
   }

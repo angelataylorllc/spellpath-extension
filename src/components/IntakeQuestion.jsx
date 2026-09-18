@@ -102,40 +102,6 @@ const IntakeQuestion = ({ question, onAnswer }) => {
     );
   }
 
-  // --- Fill in the blank ---
-  if (type === 'fill_blank') {
-    const parts = text.split('___');
-    return (
-      <div className="space-y-4">
-        <p className="intake-question leading-relaxed">
-          {parts[0]}
-          <input
-            type="text"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder || '...'}
-            className="inline-block mx-1 px-3 py-1 genre-input rounded focus:outline-none"
-            style={{
-              minWidth: '120px',
-              maxWidth: '200px',
-              borderBottom: '2px solid var(--color-accent)',
-            }}
-            autoFocus
-          />
-          {parts[1] || ''}
-        </p>
-        <button
-          onClick={handleSubmitInput}
-          disabled={!inputValue.trim()}
-          className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
-        >
-          Continue
-        </button>
-      </div>
-    );
-  }
-
   return <p className="ui-meta">Unknown question type: {type}</p>;
 };
 

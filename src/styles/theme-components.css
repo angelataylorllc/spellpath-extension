@@ -1,0 +1,369 @@
+/* Shared UI that reads theme tokens. Atmosphere lives in theme-atmosphere.css. */
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Use these in your components */
+.scene {
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  background:
+    radial-gradient(1200px 700px at 70% -10%, color-mix(in srgb, var(--color-highlight, var(--color-accent)) 18%, transparent), transparent 60%),
+    linear-gradient(180deg, color-mix(in srgb, var(--color-bg) 90%, #000000 10%), var(--color-bg));
+  color: var(--color-text);
+  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+  transition: background-color .35s ease, color .35s ease;
+}
+
+.scene h1, .scene h2, .scene h3 {
+  color: var(--color-accent);
+  font-family: var(--font-display, var(--font-body, "Inter", system-ui, sans-serif));
+  letter-spacing: .02em;
+}
+
+.scene .text-muted,
+.scene .muted {
+  color: var(--color-text-muted);
+}
+
+.scene .genre-card {
+  background-color: var(--genre-card-surface);
+  background-image: linear-gradient(135deg, color-mix(in srgb, var(--color-bg-alt) 85%, transparent), color-mix(in srgb, var(--color-surface) 92%, transparent));
+  border: 1px solid var(--color-accent-soft);
+  color: var(--color-text);
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(var(--blur-amount));
+}
+
+.scene .genre-input,
+.scene .genre-select {
+  border: 1px solid var(--color-accent-soft);
+  color: var(--color-text);
+}
+
+/* Day: surface tokens are often dark panel colors — use light bg-alt for readable inputs */
+:root[data-mode="day"] .scene .genre-input,
+:root[data-mode="day"] .scene .genre-select {
+  background-color: var(--genre-card-surface);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-mode="night"] .scene .genre-input,
+:root[data-mode="night"] .scene .genre-select {
+  background-color: color-mix(in srgb, var(--color-surface) 88%, var(--color-bg) 12%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.scene .genre-input::placeholder,
+.scene .genre-select::placeholder {
+  color: var(--color-text-muted);
+}
+
+.scene .genre-input:focus,
+.scene .genre-select:focus {
+  outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, transparent);
+  outline-offset: 1px;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+.scene .genre-button {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size, 17px);
+  font-weight: 600;
+  background: var(--genre-selected-bg);
+  border: 2px solid var(--genre-selected-border);
+  color: var(--color-text);
+  box-shadow: var(--genre-selected-shadow);
+  text-shadow: none;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s, transform 0.2s;
+}
+
+.scene .genre-button:hover:not(:disabled) {
+  transform: translateY(-1px) scale(1.01);
+  box-shadow: var(--genre-selected-shadow), 0 6px 14px rgba(0, 0, 0, 0.12);
+  filter: brightness(1.02);
+}
+
+.scene .genre-button:disabled {
+  background: var(--genre-card-surface);
+  border: 2px solid var(--color-accent-soft);
+  color: var(--color-text-muted);
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+  box-shadow: none;
+}
+
+.scene .genre-title {
+  color: var(--color-accent);
+}
+
+.app {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.chat-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent-soft);
+}
+
+.button-primary {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.token-highlight {
+  background: var(--color-highlight);
+}
+
+/* ============================================
+   LAYOUT
+   ============================================ */
+
+.scene__content {
+  position: relative;
+  z-index: 1;
+  max-width: 42rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+/* Toolbar row — in-flow so content never overlaps day/night + settings buttons */
+.scene__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.scene__toolbar-leading {
+  flex: 1;
+  min-width: 0;
+}
+
+.scene__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.scene__toolbar-actions--end {
+  margin-left: auto;
+}
+
+.toolbar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border-radius: 0.5rem;
+  background-color: var(--toolbar-btn-bg, var(--color-accent-soft));
+  color: var(--toolbar-btn-fg, var(--btn-fg));
+  border: 2px solid var(--toolbar-btn-border, var(--color-accent));
+  line-height: 0;
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.toolbar-btn:hover {
+  transform: scale(1.1);
+}
+
+.toolbar-btn svg {
+  display: block;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+/* Story reading column — ~two-thirds of viewport width */
+.scene__content--story {
+  max-width: 66.67vw;
+  width: 100%;
+}
+
+/* Home / intake screen — slightly tighter than default so content fits without browser zoom */
+.scene__content--intake {
+  --font-ui-size: 16px;
+  --font-ui-size-sm: 15px;
+  --font-ui-size-lg: 18px;
+  --font-ui-size-xl: 21px;
+  margin-top: 8px;
+  padding: calc(1.625rem - 12px) 1.2rem calc(2.25rem - 12px);
+  line-height: 1.5;
+}
+
+.scene__content--intake .scene__toolbar-leading {
+  text-align: center;
+}
+
+@media (min-width: 640px) {
+  .scene__content--intake .scene__toolbar-leading {
+    text-align: left;
+  }
+}
+
+.scene__content--intake .scene__toolbar {
+  margin-bottom: 0.375rem;
+}
+
+.scene__content--intake .genre-picker__option {
+  padding: 0.85rem 0.925rem;
+}
+
+.scene__content--intake .ui-label {
+  margin-bottom: 0.625rem;
+}
+
+.scene__content--intake .ui-genre-desc {
+  margin-top: 0.15rem;
+  line-height: 1.4;
+}
+
+/* ============================================
+   UI FONT — forms, quiz, chrome (uses genre theme fonts)
+   Sizes stay in px; font-family comes from --font-body / --font-display
+   ============================================ */
+
+.ui-font {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+.ui-font .genre-title {
+  font-family: var(--font-display, var(--font-body, system-ui, sans-serif));
+}
+
+.ui-font .ui-subtitle {
+  font-size: var(--font-ui-size-xl);
+  line-height: 1.45;
+  color: var(--color-text-muted);
+}
+
+.ui-font .ui-label {
+  display: block;
+  font-size: var(--font-ui-size-xl);
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+}
+
+.ui-font .ui-meta {
+  font-size: var(--font-ui-size-sm);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.ui-font .ui-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: var(--font-ui-size);
+  color: var(--color-text);
+  background: none;
+  border: none;
+  padding: 0;
+  margin-bottom: 0.75rem;
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+.ui-font .ui-link:hover {
+  opacity: 1;
+}
+
+.ui-font .ui-genre-name {
+  font-family: var(--font-display, var(--font-body, system-ui, sans-serif));
+  font-size: var(--font-ui-size-xl);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.ui-font .ui-genre-desc {
+  font-size: var(--font-ui-size-lg);
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  margin-top: 0.2rem;
+}
+
+.ui-font .genre-input,
+.ui-font .genre-input::placeholder {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+}
+
+.ui-font .genre-button,
+.ui-font .ui-btn {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.ui-font .ui-btn--secondary {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+  font-weight: 500;
+  background-color: var(--color-bg-alt);
+  color: var(--color-text);
+  border: 1px solid var(--color-accent-soft);
+  cursor: pointer;
+}
+
+.ui-font .intake-question {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size-xl);
+  font-weight: 500;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.ui-font .intake-choice {
+  font-family: var(--font-body, system-ui, sans-serif);
+  font-size: var(--font-ui-size);
+}
+
+/* Genre picker on home screen */
+.genre-picker__option {
+  width: 100%;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 2px solid var(--color-accent-soft);
+  background: var(--genre-card-surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.3s, background 0.3s, box-shadow 0.3s;
+}
+
+.genre-picker__option:hover {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-accent-soft));
+}
+
+.genre-picker__option--selected {
+  border-color: var(--genre-selected-border);
+  background: var(--genre-selected-bg);
+  box-shadow: var(--genre-selected-shadow);
+}
+
+.genre-picker__option--selected .ui-genre-name,
+.genre-picker__option--selected .ui-genre-desc {
+  color: var(--color-text);
+}
+
+.story-chrome {
+  font-family: var(--font-body, system-ui, sans-serif);
+}
+
+.story-chrome .ui-meta {
+  font-size: var(--font-ui-size-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}

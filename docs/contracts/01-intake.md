@@ -5,9 +5,9 @@ Establish the learner's starting point and constraints with minimal friction, us
 # Flow
 
 1. **Universal questions (hardcoded, 3 total):**
-   - Age range (choice: under 13 / 13–17 / 18–24 / 25–44 / 45–64 / 65+) — for tone calibration
+   - Age range (choice: 6–10 / 11–13 / 13–17 / 18–64 / 65+) — sets story length and diction (shortest/simplest → standard adult → unhurried everyday words). Old values `under_13` / `18_24` / `25_44` / `45_64` map to `11_13` / `18_64`.
    - Experience level with the subject (choice: beginner / intermediate / advanced)
-   - Motivation (choice: curious, school, work, building, passion)
+   - Motivation (choice: curious / school / building) — shapes the journey ending (tour vs unit vs make). Old values `work`/`passion` map to building/curious.
 
 2. **AI-generated questions (2–3, from `POST /api/intake`):**
    - Generated based on `{ subject, genre, age, level, motivation }`
@@ -50,7 +50,7 @@ Input:
 { "subject": "string", "genre": "string", "age": "string", "level": "string", "motivation": "string" }
 ```
 
-Age values: `under_13`, `13_17`, `18_24`, `25_44`, `45_64`, `65_plus`
+Age values: `6_10`, `11_13`, `13_17`, `18_64`, `65_plus`
 
 Output:
 
@@ -82,9 +82,9 @@ All answers (universal + AI-generated) are collected into a single `answers` arr
 
 ```json
 [
-  { "questionId": "u_1", "answer": "25_44" },
+  { "questionId": "u_1", "answer": "18_64" },
   { "questionId": "u_2", "answer": "beginner" },
-  { "questionId": "u_3", "answer": "work" },
+  { "questionId": "u_3", "answer": "building" },
   { "questionId": "ai_1", "answer": "recognize" },
   { "questionId": "ai_2", "answer": "practical" },
   { "questionId": "ai_3", "answer": "I want to connect Printify to Etsy..." }

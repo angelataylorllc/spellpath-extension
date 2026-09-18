@@ -9,14 +9,16 @@ cd /home/angela/Desktop/code/spellpath/spellpath-extension
 npm run api
 ```
 
-Runs at `http://localhost:4000`. Needs `.env` with `OPENAI_API_KEY`.
+Runs at `http://localhost:4000`. Needs `.env` (platform key and/or allowlist) plus a key in **Settings** if you use BYOK.
 
-**Terminal 2 — build extension**
+**Terminal 2 — build extension against localhost**
 
 ```bash
 cd /home/angela/Desktop/code/spellpath/spellpath-extension
-npm run build
+npm run build:local
 ```
+
+`npm run build` / `build:byok` compile against **production** (`https://api.spellpath.app`). Use those only when that host is live.
 
 **Chrome — load extension**
 
@@ -30,10 +32,10 @@ npm run build
 ## After UI/code changes
 
 ```bash
-npm run build
+npm run build:local
 ```
 
-Then **Reload** the extension on `chrome://extensions`.
+Then **Reload** the extension on `chrome://extensions`. Restart `npm run api` only if you changed server files.
 
 ---
 
@@ -49,6 +51,6 @@ Then **Reload** the extension on `chrome://extensions`.
 
 ## Optional shortcuts
 
-- **UI-only, no API cost:** Skip `npm run api` — the app uses mock content.
+- **No API:** Skip `npm run api` and you can still open the popup and walk intake. If `/api/intake` is down, intake falls back to mock questions. **Scaffold and beats need the API** — they do not mock.
 - **`npm run dev`:** Vite dev server only; does **not** replace loading `dist/` in Chrome.
 - **First time on a machine:** Run `npm install` once in `spellpath-extension/`.

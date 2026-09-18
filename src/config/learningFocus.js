@@ -1,9 +1,7 @@
 export const LEARNING_FOCUS_OPTIONS = [
-  { label: 'Getting started / basics', value: 'getting_started' },
-  { label: 'How it works (core concepts)', value: 'concepts' },
-  { label: 'Practical use & integrations', value: 'practical' },
-  { label: 'Applying it (projects, marketing, etc.)', value: 'applying' },
-  { label: 'Troubleshooting / going deeper', value: 'advanced_use' },
+  { label: "What's going on (the why)", value: 'understanding' },
+  { label: 'How to work with it (the process)', value: 'method' },
+  { label: 'Help me use it (a purpose)', value: 'use' },
 ];
 
 export const LEARNING_FOCUS_LABELS = Object.fromEntries(

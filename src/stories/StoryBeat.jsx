@@ -1,13 +1,23 @@
 import { useState, useMemo } from 'react';
 import { useNarrativeReveal } from '../hooks/useNarrativeReveal';
-import { parseNarrativeBlocks } from './parseNarrativeBlocks';
+import { parseNarrativeBlocks, coalesceNarrativeParagraphs } from './parseNarrativeBlocks';
 
-const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading, loadingMessage, adaptationNotice }) => {
+const StoryBeat = ({
+  narrative,
+  checkpoint,
+  nextDirections,
+  onAnswer,
+  onSteer,
+  isLoading,
+  loadingMessage,
+  adaptationNotice,
+}) => {
   const [selected, setSelected] = useState(null);
   const [submitted, setSubmitted] = useState(false);
+  const [steered, setSteered] = useState(false);
 
   const paragraphs = useMemo(
-    () => (narrative ? narrative.split(/\n\n+/).map(p => p.trim()).filter(Boolean) : []),
+    () => coalesceNarrativeParagraphs(narrative),
     [narrative],
   );
 
@@ -149,6 +159,33 @@ const StoryBeat = ({ narrative, checkpoint, onAnswer, isLoading, loadingMessage,
             >
               {adaptationNotice.message}
             </p>
+          )}
+
+          {submitted && Array.isArray(nextDirections) && nextDirections.length >= 2 && onSteer && (
+            <div className="story-steer">
+              <p className="story-checkpoint__label">Which way?</p>
+              <p className="story-checkpoint__question">Which topic do you want to explore next?</p>
+              <div className="story-checkpoint__options">
+                {nextDirections.map((dir) => (
+                  <button
+                    key={dir.id || dir.label}
+                    type="button"
+                    onClick={() => {
+                      if (steered || isLoading) return;
+                      setSteered(true);
+                      onSteer(dir);
+                    }}
+                    disabled={steered || isLoading}
+                    className={`story-choice${dir.isMainThread ? ' story-choice--main-thread' : ''}`}
+                  >
+                    <span className="story-steer__label">{dir.label}</span>
+                    {dir.speaker ? (
+                      <span className="story-steer__speaker">{dir.speaker}</span>
+                    ) : null}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       )}

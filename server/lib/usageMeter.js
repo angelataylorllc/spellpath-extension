@@ -26,8 +26,3 @@ export function recordLLMUsage(record) {
     });
   }
 }
-
-/** @deprecated Use recordLLMUsage */
-export function recordOpenAIUsage(record) {
-  recordLLMUsage({ provider: 'openai', ...record });
-}

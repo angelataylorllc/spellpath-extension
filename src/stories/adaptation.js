@@ -33,8 +33,22 @@ export function buildRemedialBeat({ concept, wrongAnswer, beatIndex }) {
 /**
  * @returns {{ type: 'revisit' | 'remedial', concept: string, message: string } | null}
  */
-export function getAdaptationNotice({ correct, concept, misconceptions, remedialAlreadyScheduled }) {
+export function getAdaptationNotice({
+  correct,
+  concept,
+  misconceptions,
+  remedialAlreadyScheduled,
+  isLastBeat,
+}) {
   if (correct || !concept) return null;
+
+  if (isLastBeat) {
+    return {
+      type: 'revisit',
+      concept,
+      message: 'This was the last scene — sit with that idea, or start another journey.',
+    };
+  }
 
   const missCount = countMisconceptionsForConcept(misconceptions, concept);
 
@@ -49,7 +63,7 @@ export function getAdaptationNotice({ correct, concept, misconceptions, remedial
   return {
     type: 'revisit',
     concept,
-    message: `Next beat will revisit ${concept} through the story.`,
+    message: 'That idea will come back in the next scene.',
   };
 }
 

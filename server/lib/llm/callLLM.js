@@ -1,4 +1,4 @@
-import { parseModelJson } from '../parseModelJson.js';
+import { isTruncatedFinish, parseModelJson } from '../parseModelJson.js';
 import { recordLLMUsage } from '../usageMeter.js';
 import { callAnthropicAdapter } from './adapters/anthropic.js';
 import { callGeminiAdapter } from './adapters/gemini.js';
@@ -7,6 +7,8 @@ import { resolveLLMForRequest } from './resolveProvider.js';
 
 const JSON_INSTRUCTION =
   '\n\nRespond with valid JSON only. No markdown fences or prose outside the JSON object.';
+
+const MAX_RETRY_TOKENS = 8192;
 
 /**
  * @param {import('express').Request} req
@@ -22,40 +24,40 @@ export async function callLLM(req, route, { systemPrompt, userPayload, maxTokens
   const userContent = JSON.stringify(userPayload);
   const fullSystemPrompt = systemPrompt + JSON_INSTRUCTION;
 
-  const invoke = () => {
-    const base = {
-      apiKey: resolved.apiKey,
-      model: resolved.model,
-      systemPrompt: fullSystemPrompt,
-      userContent,
-      maxTokens,
-      temperature,
+  let tokenBudget = maxTokens;
+  let lastParseError;
+  let lastParsed = null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const invoke = () => {
+      const base = {
+        apiKey: resolved.apiKey,
+        model: resolved.model,
+        systemPrompt: fullSystemPrompt,
+        userContent,
+        maxTokens: tokenBudget,
+        temperature,
+      };
+
+      switch (resolved.provider) {
+        case 'anthropic':
+          return callAnthropicAdapter({ ...base, models: resolved.models });
+        case 'gemini':
+          return callGeminiAdapter(base);
+        case 'openai':
+        default:
+          return callOpenAIAdapter(base);
+      }
     };
 
-    switch (resolved.provider) {
-      case 'anthropic':
-        return callAnthropicAdapter({ ...base, models: resolved.models });
-      case 'gemini':
-        return callGeminiAdapter(base);
-      case 'openai':
-      default:
-        return callOpenAIAdapter(base);
-    }
-  };
-
-  let lastParseError;
-  let lastProviderError;
-  for (let attempt = 0; attempt < 2; attempt += 1) {
     let result;
     try {
       result = await invoke();
     } catch (err) {
       const msg = err?.message || String(err);
-      lastProviderError = Object.assign(
+      throw Object.assign(
         new Error(`${resolved.provider} API error: ${msg}`),
         { status: err?.status || 502 },
       );
-      throw lastProviderError;
     }
 
     recordLLMUsage({
@@ -69,16 +71,27 @@ export async function callLLM(req, route, { systemPrompt, userPayload, maxTokens
     });
 
     try {
-      return parseModelJson(result.text, { route, finishReason: result.finishReason });
+      lastParsed = parseModelJson(result.text, { route, finishReason: result.finishReason });
     } catch (err) {
       lastParseError = err;
-      if (result.finishReason === 'length' || result.finishReason === 'max_tokens') {
-        console.warn(`[spellpath] ${route} response truncated (attempt ${attempt + 1}); retrying…`);
-      } else if (attempt === 0) {
-        console.warn(`[spellpath] ${route} JSON parse failed (attempt 1); retrying…`);
-      }
+      lastParsed = null;
+    }
+
+    const truncated = isTruncatedFinish(result.finishReason);
+    if (lastParsed && (!truncated || attempt === 1)) {
+      return lastParsed;
+    }
+
+    if (truncated) {
+      console.warn(
+        `[spellpath] ${route} response truncated (attempt ${attempt + 1}, maxTokens=${tokenBudget}); retrying…`,
+      );
+      tokenBudget = Math.min(Math.max(tokenBudget * 2, tokenBudget + 1500), MAX_RETRY_TOKENS);
+    } else if (!lastParsed && attempt === 0) {
+      console.warn(`[spellpath] ${route} JSON parse failed (attempt 1); retrying…`);
     }
   }
 
+  if (lastParsed) return lastParsed;
   throw lastParseError || new Error('Failed to parse model response');
 }

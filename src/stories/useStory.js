@@ -99,6 +99,8 @@ export const useStory = () => {
         learnerProfile: ctx.learnerProfile,
         storySoFar: ctx.storySoFar,
         recentCheckpoints: ctx.recentCheckpoints,
+        learnerDirection: ctx.learnerDirection,
+        steerOverride: ctx.steerOverride,
         genre,
         mode,
         beatIndex: ctx.beatIndex,
@@ -137,6 +139,8 @@ export const useStory = () => {
         learnerProfile: ctx.learnerProfile,
         storySoFar: ctx.storySoFar,
         recentCheckpoints: ctx.recentCheckpoints,
+        learnerDirection: ctx.learnerDirection,
+        steerOverride: ctx.steerOverride,
         genre: scaffold.theme?.genre,
         mode: scaffold.theme?.mode,
         beatIndex: ctx.beatIndex,
@@ -174,6 +178,8 @@ export const useStory = () => {
       beatSummary: currentBeatData?.beatSummary || '',
       narrative: currentBeatData?.narrative || '',
       checkpoint: currentBeatData?.checkpoint,
+      unresolvedHook: currentBeatData?.unresolvedHook || '',
+      recapTitle: currentBeatData?.recapTitle || '',
     });
 
     setAdaptationNotice(engine.getAdaptationNotice({ correct, concept }));
@@ -181,9 +187,13 @@ export const useStory = () => {
     syncState();
   }, [engine, currentBeatData, syncState]);
 
-  // Called after checkpoint feedback — advance to next beat or complete
-  const continueStory = useCallback(async () => {
+  // Called after checkpoint feedback — optional steer, then next beat or complete
+  const continueStory = useCallback(async (direction = null) => {
     setAdaptationNotice(null);
+    engine.activeSteer = null;
+    engine.pendingSteer = null;
+    if (direction) engine.setSteer(direction);
+
     const hasMore = engine.advanceBeat();
     syncState();
 
@@ -194,15 +204,22 @@ export const useStory = () => {
 
     const remedial = engine.maybeInsertRemedialBeat();
     if (remedial) {
+      engine.applyPendingSteerToBeat(engine.beatCursor + 1);
       setScaffold({ ...engine.scaffold });
       syncState();
+    } else {
+      engine.applyPendingSteerToBeat(engine.beatCursor);
+      setScaffold({ ...engine.scaffold });
     }
 
     const loadingHint = remedial
       ? `Crafting a practice beat on ${remedial.concept}…`
-      : null;
+      : direction?.label
+        ? `Following ${direction.speaker ? `${direction.speaker}: ` : ''}${direction.label}…`
+        : null;
 
     await loadBeat({ loadingHint });
+    engine.activeSteer = null;
   }, [engine, syncState, loadBeat]);
 
   const reset = useCallback(() => {

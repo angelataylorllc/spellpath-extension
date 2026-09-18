@@ -12,6 +12,12 @@ function tryParse(candidate) {
   }
 }
 
+/** OpenAI uses "length"; Gemini uses "MAX_TOKENS" / "max_tokens". */
+export function isTruncatedFinish(finishReason) {
+  const reason = String(finishReason || '').toLowerCase().replace(/[\s-]/g, '_');
+  return reason === 'length' || reason === 'max_tokens' || reason === 'max_token';
+}
+
 /** Close unclosed strings/brackets when the model hits max_tokens mid-JSON. */
 function repairTruncatedJson(raw) {
   let repaired = raw.trim();
@@ -72,7 +78,8 @@ export function parseModelJson(raw, { route, finishReason } = {}) {
     candidates.add(trimmed.slice(firstBrace, lastBrace + 1));
   }
 
-  if (finishReason === 'length') {
+  const truncated = isTruncatedFinish(finishReason) || (firstBrace !== -1 && lastBrace < firstBrace);
+  if (truncated) {
     candidates.add(repairTruncatedJson(trimmed));
     if (firstBrace !== -1) {
       candidates.add(repairTruncatedJson(trimmed.slice(firstBrace)));

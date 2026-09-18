@@ -1,4 +1,4 @@
-import { parseNarrativeBlocks } from './parseNarrativeBlocks';
+import { parseNarrativeBlocks, coalesceNarrativeParagraphs } from './parseNarrativeBlocks';
 
 const LOG_KEY = 'spellpath_session_logs';
 const MAX_LOGS = 50;
@@ -36,6 +36,7 @@ export function buildSessionArchive({
       beatTitle: beat.beatTitle,
       concept: beat.concept,
       summary: beat.summary,
+      chosenDirection: beat.chosenDirection || null,
       narrative: beat.narrative,
       narrativeBlocks: beat.narrativeBlocks || parseNarrativeBlocks(beat.narrative),
       checkpoint: beat.checkpointRecord || null,
@@ -138,8 +139,23 @@ function escapeHtml(text) {
     .replace(/"/g, '&quot;');
 }
 
-function renderBlocksHtml(blocks) {
-  return (blocks || [])
+function renderParagraphHtml(narrative, fallbackBlocks) {
+  const paragraphs = coalesceNarrativeParagraphs(narrative);
+
+  if (paragraphs.length > 0) {
+    return paragraphs
+      .flatMap(para => parseNarrativeBlocks(para))
+      .map(block => {
+        const text = escapeHtml(block.text);
+        if (block.type === 'dialogue') {
+          return `<p class="dialogue">${text}</p>`;
+        }
+        return `<p class="prose">${text}</p>`;
+      })
+      .join('\n');
+  }
+
+  return (fallbackBlocks || [])
     .map(block => {
       const text = escapeHtml(block.text);
       if (block.type === 'dialogue') {
@@ -157,11 +173,6 @@ function renderStoryPrintHtml(archive) {
 
   const beatsHtml = (archive.beats || [])
     .map((beat, i) => {
-      const blocks =
-        beat.narrativeBlocks?.length > 0
-          ? beat.narrativeBlocks
-          : parseNarrativeBlocks(beat.narrative);
-
       const checkpointHtml = beat.checkpoint
         ? `<div class="checkpoint">
             <p class="checkpoint-label">Checkpoint</p>
@@ -179,7 +190,7 @@ function renderStoryPrintHtml(archive) {
 
       return `<section class="beat">
         <h2>Beat ${i + 1}${beat.beatTitle ? `: ${escapeHtml(beat.beatTitle)}` : ''}</h2>
-        ${renderBlocksHtml(blocks)}
+        ${renderParagraphHtml(beat.narrative, beat.narrativeBlocks)}
         ${checkpointHtml}
       </section>`;
     })

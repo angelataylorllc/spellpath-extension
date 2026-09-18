@@ -7,8 +7,10 @@ Gauge understanding and adapt the path in real time.
 The AI must:
 
 - Ask questions that test **conceptual grasp** of `checkpointFocus`, not trivia or story recall.
+- The question must be **in-world** (a dilemma in the scene), not a textbook definition ("What is the difference between X and Y?").
 - Provide exactly three options; exactly one correct.
-- **Wrong options** must be plausible — common misconceptions, partial truths, or tempting shortcuts — never obviously silly.
+- **Wrong options** must be plausible — common misconceptions, partial truths, or tempting shortcuts — never obviously silly, and not two copies of the same wrong idea.
+- If the learner just steered, test **this** path's concept, not the previous closer's leftover pitch.
 - Include `feedbackCorrect` and `feedbackIncorrect` — one sentence each, shown after lock-in.
 - Name the concept plainly in feedback (not "Correct!").
 
