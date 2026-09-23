@@ -36,7 +36,7 @@ Return JSON:
 FORMAT:
 - Paragraphs: ageBudget.paragraphs, separated only by \\n\\n.
 - Dialogue: ageBudget.spokenLines, straight ASCII double quotes, woven into the SAME paragraph as the speech tag ("Like this," Kai said). Never a quote on its own line. Each spoken line ≤ 20 words.
-- Follow skeleton.mustShow, spokenPlan, and shownBeat. Do not invent a new plot.
+- Follow skeleton.mustShow, spokenPlan, and shownBeat. Do not invent a new plot. If you are not sure a fact is true, do not put it in the scene or the quiz.
 - Paragraph 1: skeleton.sensoryHook only (one channel). If previousNarrativeOpening is set, do not reuse that image.
 - Teach because they SAW the mechanism. No sermons ("the lesson is").
 - Last teaching paragraph ends on skeleton.closeOn (a seen object or action). Ban proverb closers.
@@ -56,6 +56,7 @@ CHECKPOINT (from skeleton.checkpointPlan):
 - Wrongs are plausible misconceptions from THIS scene. feedbackCorrect / feedbackIncorrect: one sentence ≤ 25 words, same words as the scene and ageBudget.okLine. No new metaphor (if they saw oxygen, do not praise "factories" or "the web").
 
 Spine: same cast and throughLine. Companions argue about what to DO. One can be half-right.
+Use each companion's scaffold.cast.pronouns every time you refer to them. Never switch pronouns for a name mid-story.
 If learnerDirection is set, paragraph 1 opens on that path and the checkpoint tests that concept.
 If the last checkpoint was wrong or misconceptions exist, show the correction in scene — not a lecture.
 Remedial: simpler example; name the idea in dialogue.

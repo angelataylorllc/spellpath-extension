@@ -15,6 +15,15 @@ function asStringList(value, maxItems, maxLen) {
     .slice(0, maxItems);
 }
 
+/** One recorded choice per companion so every beat uses the same pronoun. */
+function normalizePronouns(raw, index) {
+  const text = String(raw || '').trim().toLowerCase();
+  if (/\b(he|him|his)\b/.test(text)) return 'he';
+  if (/\b(she|her|hers)\b/.test(text)) return 'she';
+  if (/\b(they|them|their)\b/.test(text)) return 'they';
+  return index % 2 === 0 ? 'she' : 'he';
+}
+
 function normalizeCastMember(raw, index) {
   if (!raw || typeof raw !== 'object') return null;
   const name = String(raw.name || raw.Name || '').trim().slice(0, 40);
@@ -28,6 +37,7 @@ function normalizeCastMember(raw, index) {
     id: String(raw.id || `cast_${index + 1}`).slice(0, 32),
     name,
     role: String(raw.role || 'companion').trim().slice(0, 48),
+    pronouns: normalizePronouns(raw.pronouns || raw.pronoun || raw.gender, index),
     aspects: asStringList(aspectsRaw, 3, 80),
     voice: String(raw.voice || raw.speech || '').trim().slice(0, 160),
   };

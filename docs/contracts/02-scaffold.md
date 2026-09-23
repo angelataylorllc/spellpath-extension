@@ -103,6 +103,7 @@ The **learner is the POV** (camera), not a named cast member.
       "id": "cast_1",
       "name": "Bramble",
       "role": "gardener",
+      "pronouns": "she",
       "aspects": ["biological history of the land", "how people and plants shaped each other"],
       "voice": "patient, names old names"
     }
@@ -118,5 +119,6 @@ Rules:
 - Each beat covers ONE concept. Beat concepts must be distinct — do not plan two beats that only restate the same contrast (e.g. "these two progressions feel different" then "why those two work").
 - For `skill` + practical/applying focus: a later beat must have the learner **do** the skill, not only hear it explained.
 - Each companion owns **1–3 related facets**. Do not add a new series-regular for every optional pool item.
+- `pronouns` is `he | she | they`, chosen once here and reused by every beat. Normalization fills a value when the model omits it, so beats always have one to follow.
 - Guests may appear in a scene; they are not promoted into `cast` unless the learner follows them.
 - Mid-story **steer** may change the next beat's `concept`; it does not replace `cast` or `throughLine`.

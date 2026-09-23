@@ -18,6 +18,7 @@ Return ONLY JSON matching this schema:
       "id": "cast_1",
       "name": "character name",
       "role": "short role in the party (e.g. gardener, healer, walker)",
+      "pronouns": "he | she | they",
       "aspects": ["1-3 topic facets this person pulls toward"],
       "voice": "one short sentence: how they talk"
     }
@@ -49,6 +50,7 @@ Rules:
 - checkpointFocus: ONE short sentence naming the idea to test.
 - throughLine: ONE sentence, under 200 characters.
 - cast voice: under 80 characters. aspects: short phrases.
+- cast pronouns: pick one per companion and state it. Every beat must use that pronoun for that name, so the reader is never confused about who acted. Prefer he or she when two companions share a scene; they/them reads as plural next to a second name.
 - Keep the scaffold terse. No explanations, no prose, no quoted dialogue.
 - If you write long strings the JSON will be truncated and the request fails.
 

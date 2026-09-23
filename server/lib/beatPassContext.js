@@ -1,12 +1,14 @@
 import { getAgeBudget } from '../../lib/ageBand.js';
 import { compactGenreNote } from '../../lib/genreVoice.js';
 import { findAuthorCard, formatCuratedAuthorGuide } from '../../lib/authorVoiceCards.js';
+import { looksLikeLectureLine } from './beatGuards.js';
 import { lookupAuthorVoiceGuide } from './resolveAuthorVoice.js';
 
 function slimCast(cast) {
   return (Array.isArray(cast) ? cast : []).map((c) => ({
     name: c?.name || '',
     role: c?.role || '',
+    pronouns: c?.pronouns || '',
     aspects: Array.isArray(c?.aspects) ? c.aspects.slice(0, 3) : [],
     voice: c?.voice || '',
   }));
@@ -122,7 +124,7 @@ export function normalizeSkeletonPlan(raw, ctx) {
     : (Array.isArray(s.forkPitches) ? s.forkPitches : [])
         .filter((p) => p && typeof p === 'object')
         .slice(0, 3)
-        .map((p, i) => ({
+        .map((p) => ({
           speaker: String(p.speaker || '').trim().slice(0, 40),
           label: String(p.label || p.topic || '').trim().slice(0, 72),
           concept: String(p.concept || '').trim().slice(0, 160),
@@ -134,7 +136,7 @@ export function normalizeSkeletonPlan(raw, ctx) {
     : [];
 
   return {
-    shownBeat: String(s.shownBeat || ctx.currentBeat?.narrativeHint || ctx.currentConcept || '').slice(0, 160),
+    shownBeat: String(s.shownBeat || ctx.currentBeat?.narrativeHint || '').slice(0, 160),
     plainConcept: String(s.plainConcept || ctx.currentConcept || '').slice(0, 160),
     setting: String(s.setting || '').slice(0, 200),
     sensoryHook: String(s.sensoryHook || '').slice(0, 120),
@@ -146,7 +148,10 @@ export function normalizeSkeletonPlan(raw, ctx) {
         'personified moral (listened, wonder, oldest trade)',
       ]),
     ].slice(0, 6),
-    spokenPlan: (Array.isArray(s.spokenPlan) ? s.spokenPlan : []).map((x) => String(x).slice(0, 80)).slice(0, 5),
+    spokenPlan: (Array.isArray(s.spokenPlan) ? s.spokenPlan : [])
+      .map((x) => String(x).slice(0, 80))
+      .filter((line) => line && !looksLikeLectureLine(line))
+      .slice(0, 5),
     forkPitches: fork,
     recapTitle: String(s.recapTitle || s.plainConcept || ctx.currentBeat?.title || '').trim().slice(0, 48),
     closeOn: String(s.closeOn || s.shownBeat || '').trim().slice(0, 80),
@@ -158,8 +163,8 @@ export function normalizeSkeletonPlan(raw, ctx) {
   };
 }
 
-export function skeletonPayload(ctx) {
-  return {
+export function skeletonPayload(ctx, retryReason) {
+  const payload = {
     ageBudget: ctx.ageBudget,
     genre: ctx.genre,
     beatIndex: ctx.beatIndex,
@@ -175,6 +180,8 @@ export function skeletonPayload(ctx) {
     storySoFar: ctx.storySoFar,
     recentCheckpoints: ctx.recentCheckpoints,
   };
+  if (retryReason) payload.retryReason = retryReason;
+  return payload;
 }
 
 export function writePayload(ctx, skeleton, retryReason) {
@@ -199,15 +206,17 @@ export function writePayload(ctx, skeleton, retryReason) {
   return payload;
 }
 
-export function restylePayload(ctx, narrative) {
-  return {
+export function restylePayload(ctx, narrative, retryNote) {
+  const payload = {
     narrative,
     ageBudget: ctx.ageBudget,
     genre: ctx.genre,
     authorStyleGuide: ctx.authorStyleGuide,
     authorCadence: ctx.authorCadence || '',
-    note: 'Last paragraph omitted. Do not add a closer. You MAY rewrite lectures into author craft.',
+    note: 'Quoted lines are __D#__ placeholders — copy them exactly. Restyle narrator only. Last paragraph omitted; do not add a closer.',
   };
+  if (retryNote) payload.retryReason = retryNote;
+  return payload;
 }
 
 export function splitNarrativeParagraphs(narrative) {
@@ -239,4 +248,38 @@ export function stitchPinnedParagraph(restyledBody, pinned, bodyCount) {
   const pin = String(pinned || '').trim();
   if (pin) parts.push(pin);
   return joinNarrativeParagraphs(parts);
+}
+
+/** Mask quoted speech so restyle can only touch narrator craft. */
+export function pinSpokenQuotes(narrative) {
+  const quotes = [];
+  const body = String(narrative || '').replace(/"[^"]*"/g, (chunk) => {
+    quotes.push(chunk);
+    return `"__D${quotes.length}__"`;
+  });
+  return { body, quotes };
+}
+
+/** Put original quotes back. Returns null if the restyle dropped placeholders. */
+export function stitchSpokenQuotes(restyled, quotes) {
+  if (!Array.isArray(quotes) || quotes.length === 0) {
+    return String(restyled || '');
+  }
+  const found = new Set();
+  let text = String(restyled || '').replace(/"__D(\d+)__"/g, (match, n) => {
+    const idx = Number(n) - 1;
+    const quote = quotes[idx];
+    if (!quote) return match;
+    found.add(idx);
+    return quote;
+  });
+  text = text.replace(/__D(\d+)__/g, (match, n) => {
+    const idx = Number(n) - 1;
+    const quote = quotes[idx];
+    if (!quote) return match;
+    found.add(idx);
+    return quote;
+  });
+  if (found.size < quotes.length) return null;
+  return text;
 }

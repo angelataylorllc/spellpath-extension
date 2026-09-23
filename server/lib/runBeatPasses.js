@@ -1,5 +1,12 @@
 import { callLLM } from './llm/callLLM.js';
 import { checkpointOptionsValid, normalizeBeatResponse } from './normalizeBeat.js';
+import {
+  isTrimmableReason,
+  narrativeWordCount,
+  skeletonPlanWeak,
+  trimNarrativeToMaxWords,
+  writeRetryReasons,
+} from './beatGuards.js';
 import { beatSkeletonPrompt } from '../prompts/beatSkeleton.js';
 import { beatWritePrompt } from '../prompts/beatWrite.js';
 import { beatRestylePrompt } from '../prompts/beatRestyle.js';
@@ -7,9 +14,11 @@ import {
   buildBeatPassContext,
   normalizeSkeletonPlan,
   pinLastParagraph,
+  pinSpokenQuotes,
   restylePayload,
   skeletonPayload,
   stitchPinnedParagraph,
+  stitchSpokenQuotes,
   writePayload,
 } from './beatPassContext.js';
 
@@ -66,6 +75,21 @@ export async function runBeatPasses(req, body) {
       }),
       ctx,
     );
+    if (skeletonPlanWeak(skeleton)) {
+      console.warn('[spellpath] beat skeleton was a definition/lecture; retrying once…');
+      skeleton = normalizeSkeletonPlan(
+        await callLLM(req, 'beat-skeleton', {
+          systemPrompt: beatSkeletonPrompt,
+          userPayload: skeletonPayload(
+            ctx,
+            'shownBeat must be an action you can film. spokenPlan is the next action, not a definition.',
+          ),
+          maxTokens: ctx.ageBudget.skeletonMaxTokens,
+          temperature: 0.35,
+        }),
+        ctx,
+      );
+    }
   } catch (err) {
     console.warn('[spellpath] beat skeleton failed; writing from currentBeat only:', err?.message || err);
     skeleton = normalizeSkeletonPlan({}, ctx);
@@ -87,41 +111,92 @@ export async function runBeatPasses(req, body) {
     temperature: 0.78,
   }), beatNormalizeCtx);
 
-  if (!String(parsed?.recapTitle || '').trim()) {
-    parsed = { ...parsed, recapTitle: skeleton.recapTitle };
-  }
+  /**
+   * Faults the pipeline can repair itself cost far less than faults that ship.
+   * An over-long beat gets trimmed; a lecture or a wrong fact reaches the reader.
+   */
+  const faultsOf = (beat) => {
+    const reasons = [];
+    let weight = 0;
+    if (!checkpointOptionsValid(beat?.checkpoint)) {
+      reasons.push('Previous checkpoint options were invalid. Return exactly 3 distinct option strings and a valid correctIndex.');
+      weight += 100;
+    }
+    for (const reason of writeRetryReasons(beat, skeleton, ctx)) {
+      reasons.push(reason);
+      weight += isTrimmableReason(reason) ? 1 : 10;
+    }
+    return { reasons, weight };
+  };
 
-  if (!checkpointOptionsValid(parsed?.checkpoint)) {
-    console.warn('[spellpath] beat checkpoint options invalid; retrying write once…');
-    parsed = normalizeBeatResponse(await callLLM(req, 'beat-write', {
+  const withRecapTitle = (beat) => (String(beat?.recapTitle || '').trim()
+    ? beat
+    : { ...beat, recapTitle: skeleton.recapTitle });
+
+  parsed = withRecapTitle(parsed);
+  let faults = faultsOf(parsed);
+
+  if (faults.reasons.length) {
+    console.warn('[spellpath] beat write retry:', faults.reasons.join(' | '));
+    const retried = withRecapTitle(normalizeBeatResponse(await callLLM(req, 'beat-write', {
       systemPrompt: beatWritePrompt,
-      userPayload: writePayload(
-        ctx,
-        skeleton,
-        'Previous checkpoint options were invalid. Return exactly 3 distinct option strings and a valid correctIndex.',
-      ),
+      userPayload: writePayload(ctx, skeleton, faults.reasons.join(' ')),
       maxTokens: ctx.ageBudget.maxTokens,
       temperature: 0.65,
-    }), beatNormalizeCtx);
-    if (!String(parsed?.recapTitle || '').trim()) {
-      parsed = { ...parsed, recapTitle: skeleton.recapTitle };
+    }), beatNormalizeCtx));
+    const retriedFaults = faultsOf(retried);
+
+    if (retriedFaults.weight <= faults.weight) {
+      parsed = retried;
+      faults = retriedFaults;
+    } else {
+      console.warn('[spellpath] retry was worse; keeping first write:', retriedFaults.reasons.join(' | '));
+    }
+    if (faults.reasons.length) {
+      console.warn('[spellpath] beat shipped with:', faults.reasons.join(' | '));
     }
   }
 
+  const maxWords = Number(ctx.ageBudget.maxWords);
+  const capWords = (beat) => {
+    if (!Number.isFinite(maxWords) || narrativeWordCount(beat?.narrative) <= maxWords) return beat;
+    return { ...beat, narrative: trimNarrativeToMaxWords(beat.narrative, maxWords) };
+  };
+
+  parsed = capWords(parsed);
+
   if (ctx.restyleAuthor && typeof parsed?.narrative === 'string' && parsed.narrative.trim()) {
     const { body, pinned, bodyCount } = pinLastParagraph(parsed.narrative);
-    try {
-      const restyleSource = body || parsed.narrative;
+    const { body: masked, quotes } = pinSpokenQuotes(body || parsed.narrative);
+
+    /** Returns stitched prose, or null when the pass lost a __D#__ placeholder. */
+    const attemptRestyle = async (retryNote) => {
       const restyled = await callLLM(req, 'beat-restyle', {
         systemPrompt: beatRestylePrompt,
-        userPayload: restylePayload(ctx, restyleSource),
+        userPayload: restylePayload(ctx, masked, retryNote),
         maxTokens: ctx.ageBudget.restyleMaxTokens,
-        temperature: 0.7,
+        temperature: retryNote ? 0.6 : 0.7,
       });
-      if (typeof restyled?.narrative === 'string' && restyled.narrative.trim()) {
+      if (typeof restyled?.narrative !== 'string' || !restyled.narrative.trim()) return null;
+      return stitchSpokenQuotes(restyled.narrative, quotes);
+    };
+
+    try {
+      let withQuotes = await attemptRestyle();
+      if (withQuotes == null && quotes.length) {
+        console.warn(`[spellpath] beat restyle dropped dialogue pins (${quotes.length} expected); retrying once…`);
+        withQuotes = await attemptRestyle(
+          `Your last attempt dropped placeholders. The narrative contains exactly ${quotes.length} placeholders `
+          + `("__D1__" through "__D${quotes.length}__"). Every one must appear in your output, in order, unchanged. `
+          + 'Restyle only the narrator sentences around them.',
+        );
+      }
+      if (withQuotes == null) {
+        console.warn('[spellpath] beat restyle dropped dialogue pins twice; keeping write body');
+      } else {
         const narrative = pinned
-          ? stitchPinnedParagraph(restyled.narrative, pinned, bodyCount)
-          : restyled.narrative;
+          ? stitchPinnedParagraph(withQuotes, pinned, bodyCount)
+          : withQuotes;
         parsed = normalizeBeatResponse(
           { ...parsed, narrative },
           beatNormalizeCtx,
@@ -130,6 +205,7 @@ export async function runBeatPasses(req, body) {
     } catch (err) {
       console.warn('[spellpath] beat restyle failed; keeping write narrative:', err?.message || err);
     }
+    parsed = capWords(parsed);
   }
 
   console.log(

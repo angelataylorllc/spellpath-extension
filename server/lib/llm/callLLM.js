@@ -70,6 +70,14 @@ export async function callLLM(req, route, { systemPrompt, userPayload, maxTokens
       totalTokens: result.usage?.totalTokens,
     });
 
+    /** Actual sizes, so token ceilings can be set from data instead of guesses. */
+    const out = result.usage?.completionTokens;
+    const headroom = Number.isFinite(out) ? `${Math.round((out / tokenBudget) * 100)}% of cap` : 'unknown';
+    console.log(
+      `[spellpath] tokens ${route}: in=${result.usage?.promptTokens ?? '?'} out=${out ?? '?'} `
+      + `cap=${tokenBudget} (${headroom}) finish=${result.finishReason || '?'}`,
+    );
+
     try {
       lastParsed = parseModelJson(result.text, { route, finishReason: result.finishReason });
     } catch (err) {

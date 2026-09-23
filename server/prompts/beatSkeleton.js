@@ -5,13 +5,13 @@ You plan ONE SpellPath beat. Do not write the story.
 
 Return JSON:
 {
-  "shownBeat": "one concrete action the learner sees (≤20 words)",
+  "shownBeat": "one action you can film (≤20 words)",
   "plainConcept": "the idea in words they could say back (≤18 words)",
   "setting": "genre situation: place + job this beat, one sentence",
   "sensoryHook": "one channel (sound|smell|touch|motion|temperature) and the object",
   "mustShow": ["2-4 seen beats, not lecture points"],
   "mustNot": ["devices this age band forbids"],
-  "spokenPlan": ["Speaker: short line", "Speaker: short line"],
+  "spokenPlan": ["Speaker: next action, ≤6 words", "Speaker: next action, ≤6 words"],
   "forkPitches": [{"speaker":"cast name","label":"UI button in ageBudget.choiceLabel","concept":"what the NEXT beat teaches"}],
   "recapTitle": "3-6 words for Story so far, same register as choiceLabel",
   "closeOn": "the seen thing the last teaching line must be (≤12 words)",
@@ -37,6 +37,8 @@ Rules:
 - Checkpoint tests grasp of plainConcept. Wrongs are tempting mistakes from THIS scene.
 - recapTitle: contents-list words in this age band ("Seeds fall" not "The Sealed Garden Wakes" or "Pollinator Attraction").
 - closeOn: one seen object or action (the dark ring, seeds falling). Not a proverb.
+- shownBeat must be an action you can film. spokenPlan is the next action, not a definition.
+- If you are not sure a fact is true, do not put it in the plan or checkpoint.
 - mustNot MUST include: a lyric/proverb last line; a personified moral (it listened, sounded like wonder, the oldest trade). The last teaching beat is a seen action.
 - Keep every string short. This is a plan, not prose.
 ${heritageBeatRules}`.trim();
