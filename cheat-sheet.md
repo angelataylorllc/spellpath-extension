@@ -9,33 +9,35 @@ cd /home/angela/Desktop/code/spellpath/spellpath-extension
 npm run api
 ```
 
-Runs at `http://localhost:4000`. Needs `.env` (platform key and/or allowlist) plus a key in **Settings** if you use BYOK.
+Runs at `http://localhost:4000`. One API for both editions. Friend zip: key in **Settings**. Consumer zip: `ANTHROPIC_API_KEY` in `.env`.
 
-**Terminal 2 — build extension against localhost**
+**Terminal 2 — build both editions against localhost**
 
 ```bash
 cd /home/angela/Desktop/code/spellpath/spellpath-extension
 npm run build:local
+npm run build:local:consumer
 ```
 
-`npm run build` / `build:byok` compile against **production** (`https://api.spellpath.app`). Use those only when that host is live.
+Prod (hits `https://api.spellpath.app`): `npm run build:byok` and `npm run build:consumer`. Those overwrite the same two folders.
 
-**Chrome — load extension**
+**Chrome — load both**
 
 1. Open `chrome://extensions`
 2. Developer mode **on**
-3. **Load unpacked** → select `spellpath-extension/dist/`
-4. Pin the extension, click its icon to open the popup
+3. **Load unpacked** → `dist-byok` (named SpellPath Friends) and `dist-consumer` (named SpellPath)
+4. Pin the one you are testing
 
 ---
 
 ## After UI/code changes
 
 ```bash
-npm run build:local
+npm run build:local            # friends
+npm run build:local:consumer   # public
 ```
 
-Then **Reload** the extension on `chrome://extensions`. Restart `npm run api` only if you changed server files.
+Then **Reload** that edition on `chrome://extensions`. Restart `npm run api` only if you changed server files.
 
 ---
 
@@ -52,5 +54,5 @@ Then **Reload** the extension on `chrome://extensions`. Restart `npm run api` on
 ## Optional shortcuts
 
 - **No API:** Skip `npm run api` and you can still open the popup and walk intake. If `/api/intake` is down, intake falls back to mock questions. **Scaffold and beats need the API** — they do not mock.
-- **`npm run dev`:** Vite dev server only; does **not** replace loading `dist/` in Chrome.
+- **`npm run dev`:** Vite dev server only; does **not** replace loading `dist-byok/` or `dist-consumer/` in Chrome.
 - **First time on a machine:** Run `npm install` once in `spellpath-extension/`.

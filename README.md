@@ -36,15 +36,15 @@ npm install
 
 ### Development
 ```bash
-npm run api          # Local SpellPath API on localhost:4000. Copy `.env.example` → `.env`
-npm run build:local  # Extension talking to that local API
-npm run build        # Production URL (`https://api.spellpath.app` from `.env.production`)
-npm run build:byok   # Same as build — prod API + byok edition
-npm run dev          # Vite only; does not replace loading `dist/` in Chrome
-npm run preview      # Preview built files
+npm run api                 # One local API on localhost:4000 (serves both editions)
+npm run build:local         # Friend zip → dist-byok/ (localhost)
+npm run build:local:consumer  # Store zip → dist-consumer/ (localhost)
+npm run build:byok          # Friend zip → dist-byok/ (api.spellpath.app)
+npm run build:consumer      # Store zip → dist-consumer/ (api.spellpath.app)
+npm run dev                 # Vite only; does not replace loading an unpacked folder in Chrome
 ```
 
-**Local:** `npm run api` + `npm run build:local`, then reload the unpacked `dist/` extension. Auth and allowlist come from `.env` (`SPELLPATH_AUTH_REQUIRED`, `SPELLPATH_ALLOWLIST`). After UI changes, rebuild with `build:local` and reload Chrome. Restart the API only if you changed server files.
+**Local:** `npm run api`, then both `build:local` and `build:local:consumer`. Load **two** unpacked extensions: `dist-byok` (Friends, Settings + your key) and `dist-consumer` (no Settings; needs `ANTHROPIC_API_KEY` in `.env`). Same allowlist/auth. Rebuild the edition you changed; restart the API only if you changed server files.
 
 **Prod config:** `.env.production` holds `VITE_API_BASE`, `VITE_AUTH_REQUIRED`, and `VITE_GOOGLE_OAUTH_CLIENT_ID` (hostname/auth changes = edit that file + `npm run build`). Do not use `npm run build` against a local API — it will call production and fail if that host is down.
 
@@ -53,10 +53,10 @@ npm run preview      # Preview built files
 **AI providers:** OpenAI, Anthropic (Claude), and Google Gemini. Set platform keys in `.env` and/or choose a provider + paste your key in **Settings** (BYOK). See `docs/ai-billing-and-byok.md`. Day-to-day commands: `cheat-sheet.md`.
 
 ### Testing the Extension
-1. Run `npm run api` and `npm run build:local`
+1. Run `npm run api`, then `npm run build:local` and `npm run build:local:consumer`
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode"
-4. Click "Load unpacked" and select the `dist/` folder (Reload after later builds)
+4. Click "Load unpacked" and select `dist-byok/` and/or `dist-consumer/` (Reload after later builds)
 5. Click the extension icon to test
 
 ### Project Structure
