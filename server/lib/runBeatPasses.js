@@ -152,9 +152,6 @@ export async function runBeatPasses(req, body) {
     } else {
       console.warn('[spellpath] retry was worse; keeping first write:', retriedFaults.reasons.join(' | '));
     }
-    if (faults.reasons.length) {
-      console.warn('[spellpath] beat shipped with:', faults.reasons.join(' | '));
-    }
   }
 
   const maxWords = Number(ctx.ageBudget.maxWords);
@@ -163,7 +160,10 @@ export async function runBeatPasses(req, body) {
     return { ...beat, narrative: trimNarrativeToMaxWords(beat.narrative, maxWords) };
   };
 
+  // Score after trimming: length complaints raised above are already repaired here,
+  // so anything still standing is a fault the reader would actually meet.
   parsed = capWords(parsed);
+  faults = faultsOf(parsed);
 
   if (ctx.restyleAuthor && typeof parsed?.narrative === 'string' && parsed.narrative.trim()) {
     const { body, pinned, bodyCount } = pinLastParagraph(parsed.narrative);
@@ -197,15 +197,36 @@ export async function runBeatPasses(req, body) {
         const narrative = pinned
           ? stitchPinnedParagraph(withQuotes, pinned, bodyCount)
           : withQuotes;
-        parsed = normalizeBeatResponse(
+        const restyledBeat = capWords(normalizeBeatResponse(
           { ...parsed, narrative },
           beatNormalizeCtx,
-        );
+        ));
+        const restyledFaults = faultsOf(restyledBeat);
+
+        /*
+         * The restyle rewrites narrator sentences, so it can introduce the very
+         * faults the draft was checked for. Ties go to the restyle — that is the
+         * author voice, and keeping it is the point of the pass. Falling back to
+         * the draft costs nothing because we already have it.
+         */
+        if (restyledFaults.weight <= faults.weight) {
+          parsed = restyledBeat;
+          faults = restyledFaults;
+        } else {
+          const introduced = restyledFaults.reasons.filter((r) => !faults.reasons.includes(r));
+          console.warn(
+            '[spellpath] restyle broke what the draft had right; keeping the draft:',
+            (introduced.length ? introduced : restyledFaults.reasons).join(' | '),
+          );
+        }
       }
     } catch (err) {
       console.warn('[spellpath] beat restyle failed; keeping write narrative:', err?.message || err);
     }
-    parsed = capWords(parsed);
+  }
+
+  if (faults.reasons.length) {
+    console.warn('[spellpath] beat shipped with:', faults.reasons.join(' | '));
   }
 
   console.log(

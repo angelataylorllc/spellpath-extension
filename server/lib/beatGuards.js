@@ -8,22 +8,6 @@ const STOP = new Set([
   'her', 'you', 'had',
 ]);
 
-const POLARITY_PAIRS = [
-  ['higher', 'lower'],
-  ['highest', 'lowest'],
-  ['rising', 'falling'],
-  ['above', 'below'],
-  ['toward', 'away'],
-  ['taut', 'slack'],
-  ['stuck', 'loose'],
-  ['jumps', 'stays'],
-  ['jumps', 'stayed'],
-  ['jumped', 'stayed'],
-  ['jump', 'stay'],
-];
-
-const PRIOR_VERB = 'drawn|built|tied|carved|written|placed';
-
 const LIMB_NOUN = 'feet|legs|limbs|wheels|treads|arms|hands';
 
 const NUMBER_WORDS = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8 };
@@ -46,10 +30,6 @@ function contentWords(text) {
     .filter((w) => w.length > 3 && !STOP.has(w));
 }
 
-function hasWord(word, text) {
-  return new RegExp(`\\b${word}\\b`, 'i').test(String(text || ''));
-}
-
 function spokenBody(text) {
   return String(text || '').replace(/^[^:]{1,40}:\s*/, '').trim();
 }
@@ -61,13 +41,6 @@ export function looksLikeDefinition(text) {
   if (/\bthe (idea|concept|lesson|fact) (is|that|of)\b/i.test(s)) return true;
   if (/^\s*(why|how|what)\b.{0,40}\b(is|are|works|means)\b/i.test(s)) return true;
   return false;
-}
-
-export function looksLikeLectureLine(text) {
-  const line = spokenBody(text);
-  if (!line) return false;
-  if (line.split(/\s+/).filter(Boolean).length > 10) return true;
-  return looksLikeThemeSpeech(line);
 }
 
 /** Theme-speech in a spoken line (no length cap — adult dialogue can be long). */
@@ -83,65 +56,85 @@ export function looksLikeThemeSpeech(text) {
   return false;
 }
 
-export function lectureLinesInNarrative(narrative) {
-  const quotes = String(narrative || '').match(/"[^"]+"/g) || [];
-  return quotes.map((q) => q.slice(1, -1)).filter(looksLikeThemeSpeech);
+export function spokenLinesInNarrative(narrative) {
+  return (String(narrative || '').match(/"[^"]+"/g) || []).map((q) => q.slice(1, -1));
 }
 
-export function understandingCloser(narrative) {
-  return /\b(understood then|as (he|she|they) understood)\b/i.test(String(narrative || ''));
+export function lectureLinesInNarrative(narrative) {
+  return spokenLinesInNarrative(narrative).filter(looksLikeThemeSpeech);
+}
+
+/** "4-5" and "5+" both floor at 4 and 5. */
+export function spokenLinesMin(spec) {
+  const first = String(spec || '').match(/\d+/);
+  return first ? Number(first[0]) : 0;
+}
+
+/**
+ * The band asks for conversation and the beat delivered one line. Nothing else
+ * enforced the floor, so "no lectures" quietly became "no talking".
+ */
+export function spokenLineShortfall(narrative, ctx) {
+  const min = spokenLinesMin(ctx?.ageBudget?.spokenLines);
+  if (min < 2) return '';
+  const count = spokenLinesInNarrative(narrative).length;
+  if (count >= min) return '';
+  return `Scene has ${count} spoken line${count === 1 ? '' : 's'}; this age band wants ${ctx.ageBudget.spokenLines}. `
+    + 'Let the companions talk — react, disagree, decide what to try next. They still must not explain the mechanism.';
 }
 
 export function skeletonPlanWeak(skeleton) {
   if (!skeleton || typeof skeleton !== 'object') return true;
   if (looksLikeDefinition(skeleton.shownBeat)) return true;
   const spoken = Array.isArray(skeleton.spokenPlan) ? skeleton.spokenPlan : [];
-  return spoken.some(looksLikeLectureLine);
+  return spoken.some(looksLikeThemeSpeech);
 }
 
-/** True when `text` only has the opposite pole of a one-sided `claim`. */
-export function claimVsTextFlip(claim, text) {
-  const c = String(claim || '');
-  const t = String(text || '');
-  if (!c || !t) return false;
-  for (const [a, b] of POLARITY_PAIRS) {
-    const cA = hasWord(a, c);
-    const cB = hasWord(b, c);
-    const tA = hasWord(a, t);
-    const tB = hasWord(b, t);
-    if (cA && !cB && tB && !tA) return true;
-    if (cB && !cA && tA && !tB) return true;
+/** Words that only ever appear on a chart the cast points at, never in the action. */
+const REPRESENTATION = /\b(chart|diagram|map|mapped|ledger|tally|label(led|ed)?|drawing|sketch|table|figure|caption|annotat\w*)\b/i;
+
+function correctLabel(checkpoint) {
+  return (checkpoint?.options || []).find((o) => o && o.correct)?.label || '';
+}
+
+/**
+ * The answer has to be sayable from what the reader watched. Half the correct
+ * option's content words must appear in the scene — a beat that demonstrates
+ * coffee dissolving carbonate cannot then ask about caffeine and parietal cells.
+ */
+export function quizVocabularyGapReason(checkpoint, narrative) {
+  const label = correctLabel(checkpoint);
+  if (!label) return 'Checkpoint has no correct option. Mark exactly one option correct.';
+  const words = contentWords(label);
+  if (!words.length) return '';
+
+  const present = stemSet(narrative);
+  const missing = words.filter((w) => !present.has(stem(w)));
+  const needed = Math.max(2, Math.ceil(words.length / 2));
+  if (words.length - missing.length >= needed) return '';
+
+  return `Correct answer leans on words the scene never used: ${missing.slice(0, 6).join(', ')}. `
+    + 'Ask about what the reader actually watched happen, in the words the scene used for it.';
+}
+
+/**
+ * The lesson got conveyed by a diagram instead of the action, then tested. The
+ * skeleton already bans drawings as the shown beat; this catches the relocation
+ * into a wall chart beside a real proxy.
+ */
+export function quizTestsDiagramOnlyReason(checkpoint, narrative) {
+  const words = contentWords(correctLabel(checkpoint)).filter((w) => w.length > 5);
+  if (!words.length) return '';
+
+  const sentences = splitSentences(String(narrative || '').replace(/\n+/g, ' '));
+  for (const word of words) {
+    const key = stem(word);
+    const mentions = sentences.filter((s) => stemSet(s).has(key));
+    if (!mentions.length || !mentions.every((s) => REPRESENTATION.test(s))) continue;
+    return `"${word}" only appears on a chart or label, then the quiz tests it. `
+      + 'Show it happening in the action, or ask about something the scene actually demonstrated.';
   }
-  return false;
-}
-
-function skeletonClaims(skeleton) {
-  if (!skeleton || typeof skeleton !== 'object') return '';
-  return [
-    skeleton.shownBeat,
-    skeleton.closeOn,
-    skeleton.checkpointPlan?.correct,
-    ...(Array.isArray(skeleton.mustShow) ? skeleton.mustShow : []),
-  ].filter(Boolean).join(' ');
-}
-
-export function writeFlipsPolarity(skeleton, narrative) {
-  return claimVsTextFlip(skeletonClaims(skeleton), narrative);
-}
-
-export function quizAgreesWithScene(checkpoint, narrative) {
-  const correct = (checkpoint?.options || []).find((o) => o && o.correct);
-  if (!correct?.label) return false;
-  const words = contentWords(correct.label);
-  if (!words.length) return true;
-  const nar = String(narrative || '').toLowerCase();
-  const hits = words.filter((w) => nar.includes(w));
-  return hits.length >= Math.min(2, words.length);
-}
-
-export function quizFlipsSkeleton(checkpoint, skeleton) {
-  const correct = (checkpoint?.options || []).find((o) => o && o.correct)?.label || '';
-  return claimVsTextFlip(skeletonClaims(skeleton), correct);
+  return '';
 }
 
 const PRONOUN_KEYS = ['he', 'she', 'they'];
@@ -198,6 +191,134 @@ export function pronounDriftReason(narrative, cast) {
 
       return `${person.name} uses "${person.pronouns}" in scaffold.cast but this scene uses "${key}". Keep each companion's cast pronoun.`;
     }
+  }
+  return '';
+}
+
+/**
+ * Folds the endings that made guards fire on words the scene did use: "fizzed"
+ * against "fizz", "acidic" against "acid", "reaction" against "react". Longest
+ * suffix first, and never below four characters, so "bring" is not cut to "br"
+ * while "brings" becomes "bring". A false retry costs a whole write call, which
+ * is why this is worth more than it looks.
+ */
+const STEM_SUFFIXES = ['ions', 'ion', 'ies', 'ing', 'ed', 'es', 'ic', 's', 'e'];
+
+function stem(word) {
+  const w = String(word);
+  for (const suffix of STEM_SUFFIXES) {
+    if (!w.endsWith(suffix)) continue;
+    const cut = w.slice(0, -suffix.length);
+    if (cut.length >= 4) return cut;
+  }
+  return w;
+}
+
+/**
+ * Plain English that happens to sit in a concept sentence. "the stomach answers
+ * with more acid" has two real terms, not five: demanding the beat also say
+ * "answers" and "more" bought retries and taught nothing.
+ */
+const GENERIC = new Set([
+  'thing', 'things', 'kind', 'sort', 'part', 'parts', 'point', 'reason', 'course',
+  'matter', 'sense', 'case', 'time', 'times', 'place', 'right', 'true', 'real',
+  'precise', 'exactly', 'rather', 'quite', 'almost', 'said', 'learned',
+  'answer', 'answers', 'more', 'less', 'make', 'makes', 'made', 'add', 'adds',
+  'take', 'takes', 'give', 'gives', 'come', 'comes', 'turn', 'turns', 'keep',
+  'keeps', 'show', 'shows', 'know', 'knows', 'need', 'needs', 'want', 'wants',
+  'help', 'helps', 'happen', 'happens', 'own', 'same', 'other', 'another',
+]);
+
+function isGeneric(word) {
+  return GENERIC.has(word) || GENERIC.has(stem(word));
+}
+
+function stemSet(text) {
+  return new Set(contentWords(text).map(stem));
+}
+
+/** Stems worth requiring: domain vocabulary, not the English around it. */
+function termSet(text) {
+  return new Set(contentWords(text).filter((w) => !isGeneric(w)).map(stem));
+}
+
+/**
+ * The metaphor ate the subject: a beat about coffee and stomach acid that never
+ * says coffee, stomach, or acid. Compares the beat against the words the plan
+ * itself used, so it needs no per-topic vocabulary list. Quiet when the plan
+ * carries no usable terms.
+ */
+export function unanchoredMetaphorReason(narrative, skeleton, ctx) {
+  const needed = Number(ctx?.literalness?.realTermsMin);
+  if (!Number.isFinite(needed) || needed < 1) return '';
+
+  const terms = termSet([
+    skeleton?.plainConcept,
+    ctx?.currentConcept,
+    ctx?.scaffold?.subject,
+  ].filter(Boolean).join(' '));
+  if (terms.size < needed) return '';
+
+  const present = stemSet(narrative);
+  const found = [...terms].filter((t) => present.has(t));
+  if (found.length >= needed) return '';
+
+  const missing = [...terms].filter((t) => !present.has(t)).slice(0, 5);
+  return `Beat names only ${found.length} of the real terms; ${ctx.literalness.level} needs ${needed}. `
+    + `Missing: ${missing.join(', ')}. ${ctx.literalness.naming}`;
+}
+
+/** Identity, composition and causation — the verbs an invented property arrives on. */
+const CLAIM_VERB = new RegExp(
+  '\\b(is|are|was|were|lines?|lined|contains?|contained|consists?|comprises?|made'
+  + '|reacts?|reacted|causes?|caused|produces?|produced|releases?|released'
+  + '|triggers?|triggered|persists?|persisted|means|holds?|neutralis|neutraliz'
+  + '|forms?|formed|becomes?|carries|carried|comes from)\\b',
+  'i',
+);
+
+function planTerms(skeleton, ctx) {
+  return stemSet([
+    skeleton?.proxyClaim,
+    skeleton?.plainConcept,
+    skeleton?.shownBeat,
+    ...(Array.isArray(skeleton?.mustShow) ? skeleton.mustShow : []),
+    ctx?.currentConcept,
+    ctx?.scaffold?.subject,
+  ].filter(Boolean).join(' '));
+}
+
+/**
+ * Asides in the shape "the calcium carbonate (the mineral that lined the stomach)"
+ * and "caffeine and chlorogenic acid—substances that persist in the brew". The
+ * aside is where an invented property gets smuggled in: it names a real term the
+ * plan knows, asserts something about it, and the assertion uses words the plan
+ * never supplied. Author-voice asides that make no claim about the subject are
+ * left alone, which is most of them.
+ */
+export function unsourcedAsideReason(narrative, skeleton, ctx) {
+  const terms = planTerms(skeleton, ctx);
+  if (terms.size < 2) return '';
+  const text = String(narrative || '').replace(/\s+/g, ' ');
+
+  const spans = [
+    ...[...text.matchAll(/\(([^)]{8,240})\)/g)].map((m) => m[1]),
+    ...[...text.matchAll(/[—–]([^—–.!?]{8,160})(?=[—–.!?]|$)/g)].map((m) => m[1]),
+  ];
+
+  for (const body of spans) {
+    if (!CLAIM_VERB.test(body)) continue;
+    // The real term must be inside the aside. A voice aside next to one ("he
+    // reached for the pH paper (there was a filing system for this…)") is not a
+    // claim about it, and flagging those cost a full retry for nothing.
+    const about = [...stemSet(body)].some((w) => terms.has(w));
+    if (!about) continue;
+    const unsourced = contentWords(body)
+      .filter((w) => !isGeneric(w) && !terms.has(stem(w)));
+    if (unsourced.length < 2) continue;
+    return `Aside "${body.trim().slice(0, 70)}" explains the subject with facts the plan never gave `
+      + `(${unsourced.slice(0, 4).join(', ')}). Name the real thing without explaining it, or cut the aside. `
+      + 'Only skeleton.proxyClaim may explain why something behaves as it does.';
   }
   return '';
 }
@@ -310,67 +431,32 @@ export function trimNarrativeToMaxWords(narrative, maxWords) {
   return [...body, last].join('\n\n');
 }
 
-export function knownStoryBlob(skeleton, ctx) {
-  const story = Array.isArray(ctx?.storySoFar) ? ctx.storySoFar : [];
-  return [
-    ...story.flatMap((b) => [b?.summary, b?.hook, b?.concept]),
-    ctx?.scaffold?.throughLine,
-    ctx?.currentBeat?.title,
-    ctx?.currentBeat?.narrativeHint,
-    skeleton?.setting,
-    skeleton?.shownBeat,
-    skeleton?.closeOn,
-    skeleton?.sensoryHook,
-    ...(Array.isArray(skeleton?.mustShow) ? skeleton.mustShow : []),
-  ].filter(Boolean).join(' ');
-}
-
-/** "the circle Moss had drawn" when circle was never in the plan or prior beats. */
-export function inventedPriorReason(narrative, knownBlob) {
-  const known = new Set(contentWords(knownBlob));
-  const re = new RegExp(
-    `\\bthe\\s+([a-z]{4,})\\s+(?:\\w+\\s+){0,3}had\\s+(${PRIOR_VERB})\\b`,
-    'gi',
-  );
-  let match;
-  while ((match = re.exec(String(narrative || '')))) {
-    const noun = String(match[1] || '').toLowerCase();
-    if (STOP.has(noun) || known.has(noun)) continue;
-    return `Do not refer to "the ${noun}" as if it already happened. Stay with this beat's setting and story so far.`;
-  }
-  return '';
-}
-
 export function writeRetryReasons(parsed, skeleton, ctx) {
   const reasons = [];
   const narrative = parsed?.narrative || '';
   const maxWords = Number(ctx?.ageBudget?.maxWords);
 
-  if (writeFlipsPolarity(skeleton, narrative)) {
-    reasons.push('Scene flipped a planned fact (higher/lower, stuck/loose). Keep mustShow polarity.');
-  }
-  if (!quizAgreesWithScene(parsed?.checkpoint, narrative)) {
-    reasons.push('Correct quiz option must use words from the scene.');
-  }
-  if (quizFlipsSkeleton(parsed?.checkpoint, skeleton)) {
-    reasons.push('Quiz flipped the planned fact. Match skeleton.checkpointPlan and mustShow.');
-  }
+  const quizGap = quizVocabularyGapReason(parsed?.checkpoint, narrative);
+  if (quizGap) reasons.push(quizGap);
+  const quizDiagram = quizTestsDiagramOnlyReason(parsed?.checkpoint, narrative);
+  if (quizDiagram) reasons.push(quizDiagram);
   if (Number.isFinite(maxWords) && narrativeWordCount(narrative) > maxWords) {
     reasons.push(`Narrative is ${narrativeWordCount(narrative)} words; max is ${maxWords}. Cut.`);
   }
   const lectures = lectureLinesInNarrative(narrative);
   if (lectures.length) {
-    reasons.push('Companions argue about what to DO. Do not explain the idea in dialogue. Short action lines only.');
+    reasons.push('Companions argue about what to DO. Do not explain the idea in dialogue.');
   }
-  if (understandingCloser(narrative)) {
-    reasons.push('Do not close on someone understanding. End on the seen object or action.');
-  }
-  const prior = inventedPriorReason(narrative, knownStoryBlob(skeleton, ctx));
-  if (prior) reasons.push(prior);
+  const tooQuiet = spokenLineShortfall(narrative, ctx);
+  if (tooQuiet) reasons.push(tooQuiet);
   const bodyPlan = bodyPlanMismatch(narrative);
   if (bodyPlan) reasons.push(bodyPlan);
   const pronoun = pronounDriftReason(narrative, ctx?.scaffold?.cast);
   if (pronoun) reasons.push(pronoun);
+  const unanchored = unanchoredMetaphorReason(narrative, skeleton, ctx);
+  if (unanchored) reasons.push(unanchored);
+  const aside = unsourcedAsideReason(narrative, skeleton, ctx);
+  if (aside) reasons.push(aside);
   const proverb = proverbCloser(narrative);
   if (proverb) reasons.push(proverb);
 

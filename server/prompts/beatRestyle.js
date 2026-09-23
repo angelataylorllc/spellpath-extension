@@ -16,7 +16,6 @@ KEEP:
 
 CHANGE (this is the job):
 - Narrator craft toward authorStyleGuide. If authorCadence is provided, match THAT rhythm — not a single parenthetical tic on earnest prose.
-- Genre texture from genre.hooks without new plot.
 
 If author craft fights ageBudget, ageBudget wins.
 Do not add a final moral or wonder-line.

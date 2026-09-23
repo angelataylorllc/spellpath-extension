@@ -1,7 +1,8 @@
 import { getAgeBudget } from '../../lib/ageBand.js';
+import { getLiteralness } from '../../lib/literalness.js';
 import { compactGenreNote } from '../../lib/genreVoice.js';
 import { findAuthorCard, formatCuratedAuthorGuide } from '../../lib/authorVoiceCards.js';
-import { looksLikeLectureLine } from './beatGuards.js';
+import { looksLikeThemeSpeech } from './beatGuards.js';
 import { lookupAuthorVoiceGuide } from './resolveAuthorVoice.js';
 
 function slimCast(cast) {
@@ -48,6 +49,10 @@ export function buildBeatPassContext({
   alreadyTaught,
 }) {
   const ageBudget = getAgeBudget(learnerProfile?.age);
+  const literalness = getLiteralness({
+    learningFocus: scaffold?.learningFocus || learnerProfile?.learningFocus,
+    motivation: scaffold?.motivation || learnerProfile?.motivation,
+  });
   const genreId = genre || scaffold?.theme?.genre || 'adventure';
   const looked = lookupAuthorVoiceGuide(scaffold?.authorStyle);
   const card = findAuthorCard(scaffold?.authorStyle);
@@ -63,6 +68,7 @@ export function buildBeatPassContext({
 
   return {
     ageBudget,
+    literalness,
     genre: compactGenreNote(genreId),
     mode: mode || scaffold?.theme?.mode || 'day',
     authorStyle,
@@ -137,6 +143,7 @@ export function normalizeSkeletonPlan(raw, ctx) {
 
   return {
     shownBeat: String(s.shownBeat || ctx.currentBeat?.narrativeHint || '').slice(0, 160),
+    proxyClaim: String(s.proxyClaim || '').trim().slice(0, 120),
     plainConcept: String(s.plainConcept || ctx.currentConcept || '').slice(0, 160),
     setting: String(s.setting || '').slice(0, 200),
     sensoryHook: String(s.sensoryHook || '').slice(0, 120),
@@ -150,8 +157,8 @@ export function normalizeSkeletonPlan(raw, ctx) {
     ].slice(0, 6),
     spokenPlan: (Array.isArray(s.spokenPlan) ? s.spokenPlan : [])
       .map((x) => String(x).slice(0, 80))
-      .filter((line) => line && !looksLikeLectureLine(line))
-      .slice(0, 5),
+      .filter((line) => line && !looksLikeThemeSpeech(line))
+      .slice(0, 8),
     forkPitches: fork,
     recapTitle: String(s.recapTitle || s.plainConcept || ctx.currentBeat?.title || '').trim().slice(0, 48),
     closeOn: String(s.closeOn || s.shownBeat || '').trim().slice(0, 80),
@@ -163,9 +170,19 @@ export function normalizeSkeletonPlan(raw, ctx) {
   };
 }
 
+/** The token ceilings are server plumbing; sending them to the model is pure cost. */
+const SERVER_ONLY_BUDGET_KEYS = new Set(['maxTokens', 'skeletonMaxTokens', 'restyleMaxTokens']);
+
+function modelAgeBudget(ageBudget) {
+  return Object.fromEntries(
+    Object.entries(ageBudget || {}).filter(([key]) => !SERVER_ONLY_BUDGET_KEYS.has(key)),
+  );
+}
+
 export function skeletonPayload(ctx, retryReason) {
   const payload = {
-    ageBudget: ctx.ageBudget,
+    ageBudget: modelAgeBudget(ctx.ageBudget),
+    literalness: ctx.literalness,
     genre: ctx.genre,
     beatIndex: ctx.beatIndex,
     totalBeats: ctx.totalBeats,
@@ -184,20 +201,32 @@ export function skeletonPayload(ctx, retryReason) {
   return payload;
 }
 
+/**
+ * The skeleton is the distillation of the scaffold, so re-sending the whole thing
+ * pays twice for one idea. Cast (names, pronouns, voice) and the through-line are
+ * the parts the plan does not carry. Genre is deliberately absent: the write
+ * prompt takes genre from skeleton.setting and is told not to add more.
+ */
+function writeScaffold(scaffold) {
+  return {
+    subject: scaffold?.subject || '',
+    throughLine: scaffold?.throughLine || '',
+    cast: scaffold?.cast || [],
+  };
+}
+
 export function writePayload(ctx, skeleton, retryReason) {
   const payload = {
     skeleton,
-    ageBudget: ctx.ageBudget,
-    genre: ctx.genre,
+    ageBudget: modelAgeBudget(ctx.ageBudget),
+    literalness: ctx.literalness,
     beatIndex: ctx.beatIndex,
     totalBeats: ctx.totalBeats,
     isLastBeat: ctx.isLastBeat,
     isRemedial: ctx.isRemedial,
-    alreadyTaught: ctx.alreadyTaught,
     learnerDirection: ctx.learnerDirection,
     previousNarrativeOpening: ctx.previousNarrativeOpening,
-    scaffold: ctx.scaffold,
-    currentBeat: ctx.currentBeat,
+    scaffold: writeScaffold(ctx.scaffold),
     learnerProfile: ctx.learnerProfile,
     storySoFar: ctx.storySoFar,
     recentCheckpoints: ctx.recentCheckpoints,
@@ -209,8 +238,7 @@ export function writePayload(ctx, skeleton, retryReason) {
 export function restylePayload(ctx, narrative, retryNote) {
   const payload = {
     narrative,
-    ageBudget: ctx.ageBudget,
-    genre: ctx.genre,
+    ageBudget: modelAgeBudget(ctx.ageBudget),
     authorStyleGuide: ctx.authorStyleGuide,
     authorCadence: ctx.authorCadence || '',
     note: 'Quoted lines are __D#__ placeholders — copy them exactly. Restyle narrator only. Last paragraph omitted; do not add a closer.',
