@@ -7,6 +7,7 @@ import '../styles/story-ui.css';
 import '../styles/adventure-campfire.css';
 import '../styles/adventure-wind.css';
 import { STORY_GENRES } from '../config/genres';
+import { IS_BYOK } from '../config/edition';
 import { cardsForGenre, findAuthorCardById, authorListedForGenre } from '../config/authorVoice';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
@@ -474,9 +475,9 @@ function App() {
   }
 
   const toolbarAuthProps = authEnabled ? { user, onSignOut: signOut } : {};
-  const settings = showSettings && <Settings onClose={() => setShowSettings(false)} />;
+  const settings = IS_BYOK && showSettings && <Settings onClose={() => setShowSettings(false)} />;
   const chrome = {
-    onOpenSettings: () => setShowSettings(true),
+    onOpenSettings: IS_BYOK ? () => setShowSettings(true) : undefined,
     toolbarAuthProps,
     settings,
   };

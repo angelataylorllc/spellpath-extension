@@ -4,7 +4,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
 
 export default [
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'dist-byok', 'dist-consumer'] },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -31,7 +31,7 @@ export default [
     },
   },
   {
-    files: ['server.js', 'server/lib/**/*.js'],
+    files: ['server.js', 'server/lib/**/*.js', 'vite.config.js'],
     languageOptions: {
       globals: globals.node,
     },

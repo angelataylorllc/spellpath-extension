@@ -1,5 +1,6 @@
 import SceneShell from '../SceneShell';
 import Toolbar from '../Toolbar';
+import { IS_BYOK } from '../../config/edition';
 
 export default function ScaffoldingScreen({
   subject,
@@ -24,8 +25,9 @@ export default function ScaffoldingScreen({
               {error}
             </p>
             <p className="text-sm opacity-80 text-left">
-              Check that <code className="text-xs">npm run api</code> is running, your active
-              provider key in Settings is valid, and try again.
+              Check that <code className="text-xs">npm run api</code> is running
+              {IS_BYOK ? ', your active provider key in Settings is valid,' : ''}
+              {' '}and try again.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <button

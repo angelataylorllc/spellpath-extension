@@ -7,9 +7,14 @@ import react from '@vitejs/plugin-react'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+const edition = process.env.VITE_EDITION === 'consumer' ? 'consumer' : 'byok'
+
 export default defineConfig({
   plugins: [react()],
   base: './', // Use relative paths for extension
+  define: {
+    'import.meta.env.VITE_EDITION': JSON.stringify(edition),
+  },
   build: {
     rollupOptions: {
       input: {
@@ -21,7 +26,7 @@ export default defineConfig({
         assetFileNames: `assets/[name].[ext]`,
       }
     },
-    outDir: 'dist',
+    outDir: process.env.SPELLPATH_OUT_DIR || 'dist-byok',
     emptyOutDir: true
   }
 })

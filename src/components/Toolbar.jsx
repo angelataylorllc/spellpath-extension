@@ -100,15 +100,17 @@ const Toolbar = ({ onOpenSettings, onSignOut, user, leading }) => {
         >
           {mode === 'day' ? <MoonIcon /> : <SunIcon />}
         </button>
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="toolbar-btn"
-          aria-label="Open settings"
-          title="Settings"
-        >
-          <SettingsIcon />
-        </button>
+        {onOpenSettings && (
+          <button
+            type="button"
+            onClick={onOpenSettings}
+            className="toolbar-btn"
+            aria-label="Open settings"
+            title="Settings"
+          >
+            <SettingsIcon />
+          </button>
+        )}
       </div>
     </div>
   );

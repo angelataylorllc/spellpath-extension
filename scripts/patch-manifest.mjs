@@ -8,11 +8,25 @@ const root = path.resolve(__dirname, '..');
 
 dotenv.config({ path: path.join(root, '.env.production') });
 
-const manifestPath = path.join(root, 'dist', 'manifest.json');
+const edition = process.env.VITE_EDITION === 'consumer' ? 'consumer' : 'byok';
+const outDir = process.env.SPELLPATH_OUT_DIR || (edition === 'consumer' ? 'dist-consumer' : 'dist-byok');
+const manifestPath = path.join(root, outDir, 'manifest.json');
 const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
-const clientId = String(process.env.VITE_GOOGLE_OAUTH_CLIENT_ID || '').trim();
+const sharedClientId = String(process.env.VITE_GOOGLE_OAUTH_CLIENT_ID || '').trim();
+const editionClientId = String(
+  edition === 'consumer'
+    ? process.env.VITE_GOOGLE_OAUTH_CLIENT_ID_CONSUMER || sharedClientId
+    : process.env.VITE_GOOGLE_OAUTH_CLIENT_ID_BYOK || sharedClientId,
+).trim();
+const clientId = editionClientId;
 const authRequired = process.env.VITE_AUTH_REQUIRED !== 'false';
+
+manifest.name = edition === 'consumer' ? 'SpellPath' : 'SpellPath (Friends)';
+manifest.action = {
+  ...(manifest.action || {}),
+  default_title: edition === 'consumer' ? 'Open SpellPath' : 'Open SpellPath (Friends)',
+};
 
 if (authRequired && clientId) {
   manifest.permissions = [...new Set([...(manifest.permissions || []), 'identity'])];

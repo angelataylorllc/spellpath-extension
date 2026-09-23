@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && cp -r extension/* dist/ && node scripts/patch-manifest.mjs",
-    "build:byok": "vite build && cp -r extension/* dist/ && node scripts/patch-manifest.mjs",
-    "build:local": "VITE_API_BASE=http://localhost:4000 vite build && cp -r extension/* dist/ && node scripts/patch-manifest.mjs",
+    "build": "VITE_EDITION=byok node scripts/build-extension.mjs",
+    "build:byok": "VITE_EDITION=byok node scripts/build-extension.mjs",
+    "build:consumer": "VITE_EDITION=consumer node scripts/build-extension.mjs",
+    "build:local": "VITE_EDITION=byok VITE_API_BASE=http://localhost:4000 node scripts/build-extension.mjs",
+    "build:local:consumer": "VITE_EDITION=consumer VITE_API_BASE=http://localhost:4000 node scripts/build-extension.mjs",
     "api": "node server.js",
     "lint": "eslint .",
     "preview": "vite preview"

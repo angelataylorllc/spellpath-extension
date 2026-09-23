@@ -35,19 +35,29 @@ function withModels(provider, env, rest) {
   };
 }
 
+function firstConfiguredPlatform(env) {
+  const preferred = normalizeProvider(env.SPELLPATH_PLATFORM_PROVIDER) || 'anthropic';
+  const order = [preferred, 'anthropic', 'openai', 'gemini'];
+  for (const provider of order) {
+    if (platformKeyForProvider(provider, env)) return provider;
+  }
+  return preferred;
+}
+
 /**
  * @param {import('express').Request} req
  * @param {NodeJS.ProcessEnv} [env]
  */
 export function resolveLLMForRequest(req, env = process.env) {
   const allowByok = byokAllowed(env);
-  const requestedProvider = normalizeProvider(req.headers[SPELLPATH_PROVIDER_HEADER]) || 'openai';
+  const headerProvider = normalizeProvider(req.headers[SPELLPATH_PROVIDER_HEADER]);
   const genericKey = String(req.headers[SPELLPATH_API_KEY_HEADER] || '').trim();
   const legacyOpenAiKey = String(req.headers[SPELLPATH_BYOK_HEADER] || '').trim();
 
   if (allowByok && genericKey) {
-    return withModels(requestedProvider, env, {
-      provider: requestedProvider,
+    const provider = headerProvider || 'openai';
+    return withModels(provider, env, {
+      provider,
       apiKey: genericKey,
       billingSource: /** @type {const} */ ('byok'),
     });
@@ -61,10 +71,11 @@ export function resolveLLMForRequest(req, env = process.env) {
     });
   }
 
-  const platformKey = platformKeyForProvider(requestedProvider, env);
+  const platformProvider = headerProvider || firstConfiguredPlatform(env);
+  const platformKey = platformKeyForProvider(platformProvider, env);
   if (platformKey) {
-    return withModels(requestedProvider, env, {
-      provider: requestedProvider,
+    return withModels(platformProvider, env, {
+      provider: platformProvider,
       apiKey: platformKey,
       billingSource: /** @type {const} */ ('platform'),
     });
@@ -72,13 +83,13 @@ export function resolveLLMForRequest(req, env = process.env) {
 
   const configured = LLM_PROVIDERS.filter(p => platformKeyForProvider(p, env)).join(', ') || 'none';
 
-  return withModels(requestedProvider, env, {
-    provider: requestedProvider,
+  return withModels(platformProvider, env, {
+    provider: platformProvider,
     apiKey: null,
     billingSource: null,
     error: allowByok
-      ? `No API key for ${requestedProvider}. Set a platform key on the server (${configured}) or add your key in Settings.`
-      : `No platform API key for ${requestedProvider}. BYOK is disabled on this server.`,
+      ? `No API key for ${platformProvider}. Set a platform key on the server (${configured}) or add your key in Settings.`
+      : `No platform API key for ${platformProvider}. BYOK is disabled on this server.`,
   });
 }
 

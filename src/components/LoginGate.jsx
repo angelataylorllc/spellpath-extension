@@ -1,4 +1,5 @@
 import SceneAtmosphere from './SceneAtmosphere';
+import { IS_BYOK } from '../config/edition';
 
 export function LoginGate({ onSignIn, loading, error }) {
   return (
@@ -12,7 +13,9 @@ export function LoginGate({ onSignIn, loading, error }) {
 
         <div className="genre-card p-3.5 rounded-lg border space-y-4">
           <p className="ui-meta">
-            Friend preview — sign in with an invited Google account, then add your AI key in Settings.
+            {IS_BYOK
+              ? 'Friend preview — sign in with an invited Google account, then add your AI key in Settings.'
+              : 'Sign in with Google to start. Stories run on SpellPath’s key — no API key to paste.'}
           </p>
 
           {error && (

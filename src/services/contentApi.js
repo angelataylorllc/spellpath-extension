@@ -6,6 +6,7 @@ import {
   LLM_PROVIDERS,
 } from './apiCredentials';
 import { getAuthorizationHeader } from './auth';
+import { IS_BYOK } from '../config/edition';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
@@ -38,7 +39,7 @@ function wrapFetchError(err) {
  */
 async function spellpathPost(path, body) {
   const headers = new Headers({ 'Content-Type': 'application/json' });
-  const creds = await getLLMCredentials().catch(() => undefined);
+  const creds = IS_BYOK ? await getLLMCredentials().catch(() => undefined) : undefined;
 
   if (creds?.apiKey) {
     headers.set(SPELLPATH_PROVIDER_HEADER, creds.provider);
