@@ -32,5 +32,10 @@ dist-ssr
 data/author-voice-cache.json
 data/author-voice-cache.json.tmp
 
+# User store: accounts, story counts, Stripe IDs
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
 # Working session notes — local only
 docs/session-notes.md

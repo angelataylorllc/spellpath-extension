@@ -82,6 +82,7 @@ function App() {
     isLoading,
     loadingMessage,
     error,
+    quotaBlock,
     adaptationNotice,
     initScaffold,
     submitCheckpoint,
@@ -594,6 +595,7 @@ function App() {
       <ScaffoldingScreen
         subject={subject}
         error={error}
+        quotaBlock={quotaBlock}
         isLoading={isLoading}
         onRetry={() => finishQuiz(userAnswers)}
         onBack={() => setUiPhase('input')}

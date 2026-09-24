@@ -8,7 +8,7 @@ function normalizeEmail(email) {
 }
 
 /**
- * @returns {{ authRequired: boolean, allowlist: Set<string> }}
+ * @returns {{ authRequired: boolean, allowlist: Set<string>, publicSignup: boolean }}
  */
 export function getAuthConfig() {
   // Default false so local `npm run api` keeps working; set true on prod server.
@@ -21,7 +21,10 @@ export function getAuthConfig() {
       .filter(Boolean),
   );
 
-  return { authRequired, allowlist };
+  // Off until the paid tier ships, so today the invite list is still the door.
+  const publicSignup = parseBool(process.env.SPELLPATH_PUBLIC_SIGNUP, false);
+
+  return { authRequired, allowlist, publicSignup };
 }
 
 export { normalizeEmail };

@@ -71,8 +71,12 @@ export function resolveLLMForRequest(req, env = process.env) {
     });
   }
 
+  // The platform key is Angela's money. Billing middleware must vouch for the
+  // request before it can be spent; an unclassified request never qualifies.
+  const allowPlatformKey = req.spellpathBilling?.allowPlatformKey === true;
+
   const platformProvider = headerProvider || firstConfiguredPlatform(env);
-  const platformKey = platformKeyForProvider(platformProvider, env);
+  const platformKey = allowPlatformKey ? platformKeyForProvider(platformProvider, env) : '';
   if (platformKey) {
     return withModels(platformProvider, env, {
       provider: platformProvider,
@@ -83,13 +87,22 @@ export function resolveLLMForRequest(req, env = process.env) {
 
   const configured = LLM_PROVIDERS.filter(p => platformKeyForProvider(p, env)).join(', ') || 'none';
 
+  let error;
+  if (!allowPlatformKey && platformKeyForProvider(platformProvider, env)) {
+    error = allowByok
+      ? 'Add your own API key in Settings to generate stories.'
+      : 'This account is not allowed to generate stories.';
+  } else if (allowByok) {
+    error = `No API key for ${platformProvider}. Set a platform key on the server (${configured}) or add your key in Settings.`;
+  } else {
+    error = `No platform API key for ${platformProvider}. BYOK is disabled on this server.`;
+  }
+
   return withModels(platformProvider, env, {
     provider: platformProvider,
     apiKey: null,
     billingSource: null,
-    error: allowByok
-      ? `No API key for ${platformProvider}. Set a platform key on the server (${configured}) or add your key in Settings.`
-      : `No platform API key for ${platformProvider}. BYOK is disabled on this server.`,
+    error,
   });
 }
 

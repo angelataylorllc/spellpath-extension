@@ -40,6 +40,8 @@ export const useStory = () => {
   const [storySoFar, setStorySoFar] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  /** Set when the learner is out of stories, so the UI offers a plan instead of a retry. */
+  const [quotaBlock, setQuotaBlock] = useState(null);
   const [adaptationNotice, setAdaptationNotice] = useState(null);
   const [loadingMessage, setLoadingMessage] = useState(null);
 
@@ -66,6 +68,7 @@ export const useStory = () => {
     authorStyle,
   }) => {
     setError(null);
+    setQuotaBlock(null);
     setAdaptationNotice(null);
     setLoadingMessage(null);
     setIsLoading(true);
@@ -115,6 +118,9 @@ export const useStory = () => {
     } catch (err) {
       const message = err?.message || 'Failed to generate story';
       setError(message);
+      if (err?.code === 'free_limit' || err?.code === 'plan_limit') {
+        setQuotaBlock({ code: err.code, entitlement: err.entitlement || null });
+      }
       engine.setPhase(STORY_PHASES.INTAKE);
       syncState();
       throw err;
@@ -227,6 +233,7 @@ export const useStory = () => {
     setScaffold(null);
     setCurrentBeatData(null);
     setError(null);
+    setQuotaBlock(null);
     setIsLoading(false);
     setAdaptationNotice(null);
     setLoadingMessage(null);
@@ -244,6 +251,7 @@ export const useStory = () => {
     isLoading,
     loadingMessage,
     error,
+    quotaBlock,
     adaptationNotice,
     initScaffold,
     loadBeat,

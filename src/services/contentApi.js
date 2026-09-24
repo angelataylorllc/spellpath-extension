@@ -14,15 +14,31 @@ const SPELLPATH_PROVIDER_HEADER = 'X-SpellPath-Provider';
 const SPELLPATH_API_KEY_HEADER = 'X-SpellPath-Api-Key';
 const SPELLPATH_OPENAI_BYOK_HEADER = 'X-SpellPath-OpenAI-Key';
 
+/** Carries the server's machine-readable reason, e.g. a spent story allowance. */
+export class ApiError extends Error {
+  constructor(message, { status, code, entitlement } = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = code;
+    this.entitlement = entitlement;
+  }
+}
+
 async function parseApiError(response) {
   const errorText = await response.text();
+  let parsed;
   try {
-    const parsed = JSON.parse(errorText);
-    if (parsed?.error) return parsed.error;
+    parsed = JSON.parse(errorText);
   } catch {
     // not JSON
   }
-  return errorText || `Request failed (${response.status})`;
+
+  return new ApiError(parsed?.error || errorText || `Request failed (${response.status})`, {
+    status: response.status,
+    code: parsed?.code,
+    entitlement: parsed?.entitlement,
+  });
 }
 
 function wrapFetchError(err) {
@@ -107,7 +123,7 @@ export async function validateTopic(payload) {
     const response = await spellpathPost('/api/validate-topic', payload);
 
     if (!response.ok) {
-      throw new Error(await parseApiError(response));
+      throw await parseApiError(response);
     }
 
     return await response.json();
@@ -121,7 +137,7 @@ export async function generateIntakeQuestions(payload) {
     const response = await spellpathPost('/api/intake', payload);
 
     if (!response.ok) {
-      throw new Error(await parseApiError(response));
+      throw await parseApiError(response);
     }
 
     return await response.json();
@@ -136,7 +152,7 @@ export async function generateScaffold(payload) {
     const response = await spellpathPost('/api/scaffold', payload);
 
     if (!response.ok) {
-      throw new Error(await parseApiError(response));
+      throw await parseApiError(response);
     }
 
     return await response.json();
@@ -150,7 +166,7 @@ export async function generateBeat(payload) {
     const response = await spellpathPost('/api/beat', payload);
 
     if (!response.ok) {
-      throw new Error(await parseApiError(response));
+      throw await parseApiError(response);
     }
 
     return await response.json();

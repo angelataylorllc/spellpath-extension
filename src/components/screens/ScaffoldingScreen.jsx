@@ -1,10 +1,12 @@
 import SceneShell from '../SceneShell';
 import Toolbar from '../Toolbar';
+import UpgradePrompt from '../UpgradePrompt';
 import { IS_BYOK } from '../../config/edition';
 
 export default function ScaffoldingScreen({
   subject,
   error,
+  quotaBlock,
   isLoading,
   onRetry,
   onBack,
@@ -12,6 +14,18 @@ export default function ScaffoldingScreen({
   toolbarAuthProps,
   settings,
 }) {
+  // Running out of stories is not a failure to retry — it needs a plan.
+  if (quotaBlock && !isLoading) {
+    return (
+      <SceneShell settings={settings}>
+        <div className="mb-6 text-center sm:text-left">
+          <Toolbar onOpenSettings={onOpenSettings} {...toolbarAuthProps} />
+        </div>
+        <UpgradePrompt code={quotaBlock.code} entitlement={quotaBlock.entitlement} onBack={onBack} />
+      </SceneShell>
+    );
+  }
+
   return (
     <SceneShell settings={settings}>
       <div className="mb-6 text-center sm:text-left">

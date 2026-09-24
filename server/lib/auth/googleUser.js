@@ -44,6 +44,10 @@ export async function fetchGoogleUser(accessToken) {
 export function assertAllowlisted(config, user) {
   if (!config.authRequired) return;
 
+  // Public signup opens the door to any Google account; billing decides what
+  // they may actually generate.
+  if (config.publicSignup) return;
+
   if (config.allowlist.size === 0) {
     throw new AuthError('Server invite list is not configured yet', 503);
   }
