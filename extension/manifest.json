@@ -11,7 +11,8 @@
       "service_worker": "background.js"
     },
     "icons": {
-      "48": "icon.png"
+      "48": "icon.png",
+      "128": "icon128.png"
     },
     "action": {
       "default_title": "Open Spellpath",
