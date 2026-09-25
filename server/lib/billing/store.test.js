@@ -13,7 +13,7 @@ beforeEach(async () => {
   process.env.SPELLPATH_DB_PATH = path.join(tmpDir, 'test.db');
   process.env.SPELLPATH_FREE_STORIES = '3';
 
-  // Re-import so FREE_STORY_LIMIT and the db handle pick up this test's env.
+  // Re-import so this test gets its own database handle.
   store = await import(`./store.js?case=${Math.random()}`);
 });
 

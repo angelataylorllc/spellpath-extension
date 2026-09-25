@@ -594,6 +594,7 @@ function App() {
     return (
       <ScaffoldingScreen
         subject={subject}
+        genre={selectedGenre}
         error={error}
         quotaBlock={quotaBlock}
         isLoading={isLoading}

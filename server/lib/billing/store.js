@@ -11,7 +11,7 @@ import { DatabaseSync } from 'node:sqlite';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FREE_STORY_LIMIT, planFor, statusIsLive } from './plans.js';
+import { freeStoryLimit, planFor, statusIsLive } from './plans.js';
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..');
 
@@ -153,20 +153,21 @@ function rollPeriodIfExpired(handle, row) {
 export function entitlementFor(sub) {
   const row = getUser(sub);
   if (!row) {
+    const limit = freeStoryLimit();
     return {
       plan: 'free',
       subscribed: false,
-      freeRemaining: FREE_STORY_LIMIT,
+      freeRemaining: limit,
       periodRemaining: 0,
       periodEnd: '',
-      canStartStory: FREE_STORY_LIMIT > 0,
+      canStartStory: limit > 0,
     };
   }
 
   const fresh = transact(handle => rollPeriodIfExpired(handle, row));
   const plan = planFor(fresh.plan);
   const subscribed = statusIsLive(fresh.subscription_status) && plan.storiesPerPeriod > 0;
-  const freeRemaining = Math.max(0, FREE_STORY_LIMIT - fresh.free_stories_used);
+  const freeRemaining = Math.max(0, freeStoryLimit() - fresh.free_stories_used);
   const periodRemaining = subscribed
     ? Math.max(0, plan.storiesPerPeriod - fresh.stories_this_period)
     : 0;
@@ -213,7 +214,8 @@ export function reserveStory({ sub, email, name = '', subject = '' }) {
       return { ok: false, reason: 'plan_limit', remaining: 0 };
     }
 
-    if (row.free_stories_used < FREE_STORY_LIMIT) {
+    const limit = freeStoryLimit();
+    if (row.free_stories_used < limit) {
       handle
         .prepare('UPDATE users SET free_stories_used = free_stories_used + 1, updated_at = ? WHERE google_sub = ?')
         .run(at, sub);
@@ -223,7 +225,7 @@ export function reserveStory({ sub, email, name = '', subject = '' }) {
       return {
         ok: true,
         source: /** @type {const} */ ('free'),
-        remaining: FREE_STORY_LIMIT - row.free_stories_used - 1,
+        remaining: limit - row.free_stories_used - 1,
       };
     }
 

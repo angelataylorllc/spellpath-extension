@@ -1,5 +1,5 @@
+import 'dotenv/config';
 import express from 'express';
-import dotenv from 'dotenv';
 import {
   SPELLPATH_API_KEY_HEADER,
   SPELLPATH_BYOK_HEADER,
@@ -38,8 +38,6 @@ import {
   intakeSystemPrompt,
   validateTopicSystemPrompt,
 } from './server/prompts/index.js';
-
-dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 4000;

@@ -1,10 +1,12 @@
 import SceneShell from '../SceneShell';
 import Toolbar from '../Toolbar';
 import UpgradePrompt from '../UpgradePrompt';
+import LoadingFlavor from '../LoadingFlavor';
 import { IS_BYOK } from '../../config/edition';
 
 export default function ScaffoldingScreen({
   subject,
+  genre,
   error,
   quotaBlock,
   isLoading,
@@ -64,9 +66,9 @@ export default function ScaffoldingScreen({
           <>
             <h2 className="text-2xl font-bold genre-title">Building Your Path</h2>
             <p className="ui-subtitle">
-              Crafting a personalized learning journey for{' '}
-              <span className="font-medium">{subject}</span>...
+              Something is gathering around <span className="font-medium">{subject}</span>.
             </p>
+            <LoadingFlavor genre={genre} />
             <div className="story-loading__pulse" aria-hidden="true" />
           </>
         )}

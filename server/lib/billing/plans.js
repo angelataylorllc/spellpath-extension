@@ -3,8 +3,14 @@
  * @see docs/ai-billing-and-byok.md
  */
 
-/** Lifetime free stories before a subscription is required. */
-export const FREE_STORY_LIMIT = Number(process.env.SPELLPATH_FREE_STORIES || 3);
+/**
+ * Lifetime free stories before a subscription is required.
+ * Read at call time so `.env` (loaded after imports) actually applies.
+ */
+export function freeStoryLimit() {
+  const n = Number(process.env.SPELLPATH_FREE_STORIES);
+  return Number.isFinite(n) && n >= 0 ? n : 3;
+}
 
 /** A story is one scaffold; beats within that story are not metered separately. */
 export const PLANS = {
