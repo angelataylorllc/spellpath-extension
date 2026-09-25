@@ -39,3 +39,6 @@ data/*.db-wal
 
 # Working session notes — local only
 docs/session-notes.md
+
+# Private keys for a stable Friends share-zip ID
+secrets/
