@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { StoryEngine, STORY_PHASES } from './engine';
-import { generateScaffold, generateBeat } from '../services/contentApi';
+import { clearStorySession, generateScaffold, generateBeat } from '../services/contentApi';
 
 export { STORY_PHASES };
 
@@ -71,6 +71,7 @@ export const useStory = () => {
     setQuotaBlock(null);
     setAdaptationNotice(null);
     setLoadingMessage(null);
+    clearStorySession();
     setIsLoading(true);
     engine.setPhase(STORY_PHASES.SCAFFOLD);
     engine.setLevel(level || 'beginner');
@@ -229,6 +230,7 @@ export const useStory = () => {
   }, [engine, syncState, loadBeat]);
 
   const reset = useCallback(() => {
+    clearStorySession();
     engine.reset();
     setScaffold(null);
     setCurrentBeatData(null);

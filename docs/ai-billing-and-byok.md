@@ -88,6 +88,16 @@ Events consumed: `checkout.session.completed`, `customer.subscription.*`,
 | `STRIPE_WEBHOOK_SECRET` | From the Stripe CLI locally, from the dashboard endpoint in production. |
 | `STRIPE_PRICE_BASIC` / `STRIPE_PRICE_PLUS` | Recurring price IDs for $5/20 and $10/50. |
 | `SPELLPATH_CHECKOUT_RETURN_URL` | Where Stripe sends the learner afterwards. |
+| `SPELLPATH_DAILY_PLATFORM_LLM_CALLS` | Default `80`. Per Google account per UTC day when the **platform** key is used. |
+| `SPELLPATH_MAX_BEATS_PER_SESSION` | Default `12`. Cap on `/api/beat` calls per scaffold session (consumers). |
+| `SPELLPATH_STORY_SESSION_HOURS` | Default `24`. TTL for `storySessionId` from `/api/scaffold`. |
+| `SPELLPATH_HEALTH_MINIMAL` | Default on when `SPELLPATH_AUTH_REQUIRED=true`: `/api/health` returns `{ ok: true }` only. Set `false` for verbose health locally. |
+
+### Abuse backstops (MVP1)
+
+- **Story session:** `/api/scaffold` returns `storySessionId` for metered users. `/api/beat` requires header `X-SpellPath-Story-Session` — blocks naked beat spam without a reserved story.
+- **Daily platform cap:** Every platform-key LLM call (validate, intake, scaffold, beats) counts toward `SPELLPATH_DAILY_PLATFORM_LLM_CALLS` per user per UTC day.
+- **DB backup:** `scripts/backup-spellpath-db.sh` (uses `sqlite3 .backup`).
 
 ## Default models
 
@@ -129,9 +139,10 @@ Adapters: `server/lib/llm/adapters/{openai,anthropic,gemini}.js`
 
 ## Health check
 
-`GET /api/health` returns `providers.openai|anthropic|gemini` with `platformKeyConfigured` and `defaultModel`.
+When auth is required (production), `GET /api/health` returns `{ "ok": true }` unless `SPELLPATH_HEALTH_MINIMAL=false`. Local dev with auth off still gets the verbose provider breakdown.
 
 ## Security notes
 
 - **HTTPS in production** for any traffic carrying API keys in headers.
 - Never log header values or store platform keys in the extension.
+- Set **`SPELLPATH_DB_PATH`** outside the git clone on sea0; back up with `scripts/backup-spellpath-db.sh`.

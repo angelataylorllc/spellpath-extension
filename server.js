@@ -23,6 +23,9 @@ import {
   createStoryQuotaMiddleware,
   getBillingConfig,
 } from './server/lib/billing/middleware.js';
+import { createStorySession, recordStoryBeat } from './server/lib/billing/abuseGuards.js';
+import { createRequireStorySessionMiddleware } from './server/lib/billing/storySessionMiddleware.js';
+import { databasePath } from './server/lib/billing/store.js';
 import { entitlementFor } from './server/lib/billing/store.js';
 import { PLANS, priceIdFor } from './server/lib/billing/plans.js';
 import {
@@ -46,6 +49,7 @@ const billingConfig = getBillingConfig();
 const requireAuth = createRequireAuthMiddleware(authConfig);
 const withBilling = createBillingMiddleware(authConfig, billingConfig);
 const requireStoryQuota = createStoryQuotaMiddleware();
+const requireStorySession = createRequireStorySessionMiddleware();
 
 /** Every route that can spend an LLM call. */
 const guarded = [requireAuth, withBilling];
@@ -87,7 +91,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
-    `Origin, X-Requested-With, Content-Type, Accept, Authorization, ${SPELLPATH_PROVIDER_HEADER}, ${SPELLPATH_API_KEY_HEADER}, ${SPELLPATH_BYOK_HEADER}`,
+    `Origin, X-Requested-With, Content-Type, Accept, Authorization, ${SPELLPATH_PROVIDER_HEADER}, ${SPELLPATH_API_KEY_HEADER}, ${SPELLPATH_BYOK_HEADER}, X-SpellPath-Story-Session`,
   );
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
@@ -272,13 +276,23 @@ app.post('/api/scaffold', ...guarded, requireStoryQuota, async (req, res) => {
       temperature: 0.5,
     });
 
+    const normalized = normalizeScaffold(parsed, {
+      motivation: resolvedMotivation,
+      learningFocus: resolvedFocus,
+    });
+    const plannedBeats = Array.isArray(normalized?.beats) ? normalized.beats.length : 5;
+    const storySessionId = req.spellpathBilling.metered
+      ? createStorySession(req.spellpathUser.sub, plannedBeats + 4)
+      : null;
+
     return res.json({
-      ...normalizeScaffold(parsed, { motivation: resolvedMotivation, learningFocus: resolvedFocus }),
+      ...normalized,
       topicCategory: topicCategory || parsed?.topicCategory || 'standard',
       authorStyle: authorStyle || '',
       authorVoiceGuide: authorVoice.guide,
       authorVoiceSource: authorVoice.source,
       entitlement: req.spellpathBilling.metered ? entitlementFor(req.spellpathUser.sub) : null,
+      storySessionId,
     });
   } catch (err) {
     // A story we could not deliver should not count against the learner.
@@ -292,7 +306,7 @@ app.post('/api/scaffold', ...guarded, requireStoryQuota, async (req, res) => {
 // POST /api/beat
 // ---------------------------------------------------------------------------
 
-app.post('/api/beat', ...guarded, async (req, res) => {
+app.post('/api/beat', ...guarded, requireStorySession, async (req, res) => {
   try {
     const {
       scaffold,
@@ -327,16 +341,31 @@ app.post('/api/beat', ...guarded, async (req, res) => {
       previousNarrativeOpening,
     });
 
+    if (req.spellpathBilling?.metered && req.spellpathStorySession?.id) {
+      recordStoryBeat(req.spellpathStorySession.id, req.spellpathUser.sub);
+    }
+
     return res.json(parsed);
   } catch (err) {
     console.error('Beat generation error:', err);
-    res.status(err.status || 500).json({ error: err.message || 'Beat generation failed' });
+    res.status(err.status || 500).json({
+      error: err.message || 'Beat generation failed',
+      code: err.code,
+    });
   }
 });
 
 // ---------------------------------------------------------------------------
 
 app.get('/api/health', (_req, res) => {
+  const minimal =
+    process.env.SPELLPATH_HEALTH_MINIMAL !== 'false'
+    && authConfig.authRequired;
+
+  if (minimal) {
+    return res.json({ ok: true });
+  }
+
   const keys = getPlatformKeyStatus();
   return res.json({
     ok: true,
@@ -352,6 +381,17 @@ app.get('/api/health', (_req, res) => {
     },
   });
 });
+
+if (authConfig.authRequired) {
+  const dbFile = databasePath();
+  const repoDefault = dbFile.includes('/data/spellpath.db');
+  if (repoDefault && !process.env.SPELLPATH_DB_PATH) {
+    console.warn(
+      '[spellpath] SPELLPATH_DB_PATH is unset — user store defaults to repo data/spellpath.db. '
+      + 'Set an absolute path outside the clone on production.',
+    );
+  }
+}
 
 app.listen(port, () => {
   console.log(`SpellPath API running on http://localhost:${port}`);

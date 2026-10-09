@@ -13,6 +13,10 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 const SPELLPATH_PROVIDER_HEADER = 'X-SpellPath-Provider';
 const SPELLPATH_API_KEY_HEADER = 'X-SpellPath-Api-Key';
 const SPELLPATH_OPENAI_BYOK_HEADER = 'X-SpellPath-OpenAI-Key';
+const SPELLPATH_STORY_SESSION_HEADER = 'X-SpellPath-Story-Session';
+
+/** Issued by /api/scaffold for metered (consumer) stories; required on /api/beat. */
+let activeStorySessionId = '';
 
 /** Carries the server's machine-readable reason, e.g. a spent story allowance. */
 export class ApiError extends Error {
@@ -53,6 +57,14 @@ function wrapFetchError(err) {
 /**
  * POST to SpellPath API; attaches active BYOK provider + key from chrome.storage.local.
  */
+export function clearStorySession() {
+  activeStorySessionId = '';
+}
+
+export function setStorySession(id) {
+  activeStorySessionId = String(id || '').trim();
+}
+
 async function spellpathPost(path, body) {
   const headers = new Headers({ 'Content-Type': 'application/json' });
   const creds = IS_BYOK ? await getLLMCredentials().catch(() => undefined) : undefined;
@@ -67,6 +79,10 @@ async function spellpathPost(path, body) {
 
   const authHeader = await getAuthorizationHeader();
   if (authHeader) headers.set('Authorization', authHeader);
+
+  if (path === '/api/beat' && activeStorySessionId) {
+    headers.set(SPELLPATH_STORY_SESSION_HEADER, activeStorySessionId);
+  }
 
   return fetch(`${API_BASE}${path}`, {
     method: 'POST',
@@ -155,7 +171,9 @@ export async function generateScaffold(payload) {
       throw await parseApiError(response);
     }
 
-    return await response.json();
+    const data = await response.json();
+    if (data.storySessionId) setStorySession(data.storySessionId);
+    return data;
   } catch (err) {
     throw wrapFetchError(err);
   }

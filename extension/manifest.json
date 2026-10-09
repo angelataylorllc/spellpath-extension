@@ -5,8 +5,8 @@
         "storage",
         "tabs"
     ],
-    "description": "A choose-your-adventure learning tool powered by GPT.",
-    "version": "0.1",
+    "description": "Learn any topic through a short, interactive choose-your-path story. Sign in with Google; optional paid plans via Stripe.",
+    "version": "0.1.1",
     "background": {
       "service_worker": "background.js"
     },

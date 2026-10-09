@@ -47,6 +47,23 @@ CREATE TABLE IF NOT EXISTS usage_log (
   subject    TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS usage_log_user_idx ON usage_log(google_sub, at);
+
+CREATE TABLE IF NOT EXISTS story_sessions (
+  session_id   TEXT PRIMARY KEY,
+  google_sub   TEXT NOT NULL,
+  created_at   TEXT NOT NULL,
+  expires_at   TEXT NOT NULL,
+  beats_used   INTEGER NOT NULL DEFAULT 0,
+  max_beats    INTEGER NOT NULL DEFAULT 12
+);
+CREATE INDEX IF NOT EXISTS story_sessions_sub_idx ON story_sessions(google_sub, created_at);
+
+CREATE TABLE IF NOT EXISTS platform_daily_usage (
+  google_sub TEXT NOT NULL,
+  utc_date   TEXT NOT NULL,
+  call_count INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (google_sub, utc_date)
+);
 `;
 
 /** @type {DatabaseSync | null} */
@@ -81,7 +98,7 @@ export function closeDb() {
   db = null;
 }
 
-function transact(fn) {
+export function transact(fn) {
   const handle = getDb();
   handle.exec('BEGIN IMMEDIATE');
   try {

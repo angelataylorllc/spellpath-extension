@@ -3,6 +3,7 @@ import { recordLLMUsage } from '../usageMeter.js';
 import { callAnthropicAdapter } from './adapters/anthropic.js';
 import { callGeminiAdapter } from './adapters/gemini.js';
 import { callOpenAIAdapter } from './adapters/openai.js';
+import { checkAndRecordPlatformCall } from '../billing/abuseGuards.js';
 import { resolveLLMForRequest } from './resolveProvider.js';
 
 const JSON_INSTRUCTION =
@@ -19,6 +20,17 @@ export async function callLLM(req, route, { systemPrompt, userPayload, maxTokens
   const resolved = resolveLLMForRequest(req);
   if (!resolved.apiKey || !resolved.billingSource) {
     throw Object.assign(new Error(resolved.error || 'No LLM API key configured.'), { status: 500 });
+  }
+
+  if (
+    resolved.billingSource === 'platform'
+    && req.spellpathUser?.sub
+    && req.spellpathBilling?.mode !== 'local'
+  ) {
+    const budget = checkAndRecordPlatformCall(req.spellpathUser.sub);
+    if (!budget.ok) {
+      throw Object.assign(new Error(budget.message), { status: 429, code: budget.code });
+    }
   }
 
   const userContent = JSON.stringify(userPayload);

@@ -1,6 +1,9 @@
+import { useEffect, useState } from 'react';
 import { STORY_GENRES } from '../../config/genres';
 import { LEARNING_FOCUS_OPTIONS } from '../../config/learningFocus';
 import { learningGoalsAreSpecific } from '../../../lib/learningFocus.js';
+import { IS_BYOK } from '../../config/edition';
+import { getLLMKeyStatus } from '../../services/apiCredentials';
 import SceneShell from '../SceneShell';
 import Toolbar from '../Toolbar';
 
@@ -27,6 +30,26 @@ export default function HomeScreen({
   toolbarAuthProps,
   settings,
 }) {
+  const [hasApiKey, setHasApiKey] = useState(null);
+  const settingsOpen = Boolean(settings);
+
+  useEffect(() => {
+    if (!IS_BYOK) return undefined;
+    let cancelled = false;
+    getLLMKeyStatus()
+      .then(status => {
+        if (!cancelled) setHasApiKey(Object.values(status.saved).some(Boolean));
+      })
+      .catch(() => {
+        if (!cancelled) setHasApiKey(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [settingsOpen]);
+
+  const needsKey = IS_BYOK && hasApiKey === false;
+
   return (
     <SceneShell contentClassName="scene__content scene__content--intake ui-font" settings={settings}>
       <div className="mb-4 text-center sm:text-left">
@@ -41,6 +64,24 @@ export default function HomeScreen({
         />
         <p className="ui-subtitle">Choose your learning adventure</p>
       </div>
+
+      {needsKey && (
+        <div className="genre-card p-3.5 rounded-lg border mb-4 space-y-3">
+          <p className="ui-meta">
+            Add an API key in Settings before you start. SpellPath can&apos;t write a story without
+            one — you use your own ChatGPT, Claude, or Gemini key.
+          </p>
+          {onOpenSettings && (
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="w-full genre-button ui-btn px-5 py-[0.6875rem] rounded-lg"
+            >
+              Open Settings
+            </button>
+          )}
+        </div>
+      )}
 
       <form onSubmit={onSubmit} className="space-y-4">
         <div className="genre-card p-3.5 rounded-lg border">
@@ -197,7 +238,7 @@ export default function HomeScreen({
         <div className="genre-card p-3.5 rounded-lg border">
           <button
             type="submit"
-            disabled={!subject.trim() || !selectedGenre || isAnalyzing}
+            disabled={!subject.trim() || !selectedGenre || isAnalyzing || needsKey}
             className="w-full genre-button ui-btn px-5 py-[0.6875rem] rounded-lg"
           >
             {isAnalyzing ? 'Checking topic...' : 'Begin Your Adventure'}
