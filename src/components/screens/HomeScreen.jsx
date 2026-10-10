@@ -29,6 +29,7 @@ export default function HomeScreen({
   onOpenSettings,
   toolbarAuthProps,
   settings,
+  entitlement = null,
 }) {
   const [hasApiKey, setHasApiKey] = useState(null);
   const settingsOpen = Boolean(settings);

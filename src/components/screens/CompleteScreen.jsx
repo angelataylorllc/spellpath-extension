@@ -4,7 +4,6 @@ import Toolbar from '../Toolbar';
 export default function CompleteScreen({
   subject,
   storySoFar,
-  onDownloadJson,
   onDownloadPdf,
   onStartOver,
   onOpenSettings,
@@ -20,7 +19,8 @@ export default function CompleteScreen({
       <div className="genre-card p-6 rounded-lg text-center space-y-4">
         <h2 className="text-2xl font-bold genre-title">Journey Complete!</h2>
         <p className="ui-subtitle">
-          You explored <span className="font-medium">{subject}</span> across {storySoFar.length} beats.
+          You explored <span className="font-medium">{subject}</span> across {storySoFar.length}{' '}
+          part{storySoFar.length !== 1 ? 's' : ''}.
         </p>
 
         {storySoFar.length > 0 && (
@@ -38,22 +38,13 @@ export default function CompleteScreen({
         )}
 
         {storySoFar.length > 0 && (
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              type="button"
-              onClick={onDownloadJson}
-              className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg"
-            >
-              Download JSON
-            </button>
-            <button
-              type="button"
-              onClick={onDownloadPdf}
-              className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg"
-            >
-              Download PDF
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onDownloadPdf}
+            className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
+          >
+            Download PDF
+          </button>
         )}
 
         <button

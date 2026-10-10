@@ -1,105 +1,280 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="scifi" data-mode="day">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>SpellPath — learn through a story</title>
   <meta name="description" content="SpellPath turns a topic you want to learn into a short choose-your-path story. Three free stories, then $5 or $10 a month. Sold by Angela Taylor LLC.">
+  <script>
+    (function () {
+      var saved = localStorage.getItem('spellpath-mode');
+      var mode = saved === 'night' || saved === 'day' ? saved : 'day';
+      document.documentElement.setAttribute('data-mode', mode);
+      document.documentElement.setAttribute('data-theme', 'scifi');
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600;700&family=Source+Sans+3:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #F4EBE0;
-      --card: #FFF8F0;
-      --text: #1C1C1C;
-      --muted: #4B4B4B;
-      --accent: #7A9E9C;
-      --gold: #D4A843;
+    /* Sci-fi tokens — aligned with extension theme-tokens.css */
+    html[data-mode="day"] {
+      --color-bg: #E0E6EB;
+      --color-bg-alt: #C0A060;
+      --color-surface: #2E3B44;
+      --color-accent: #4A90A4;
+      --color-accent-soft: #7B3F61;
+      --color-highlight: #C0A060;
+      --color-text: #1C1C1C;
+      --color-text-muted: #4B4B4B;
+      --genre-card-surface: #e8eef3;
+      --toolbar-btn-bg: color-mix(in srgb, var(--color-accent) 16%, #ffffff 84%);
+      --toolbar-btn-fg: #111111;
+      --toolbar-btn-border: var(--color-accent);
+      --link: var(--color-accent-soft);
+      --error: #7B3F61;
+      --bg-gradient: linear-gradient(175deg, #eef3f7 0%, var(--color-bg) 45%, #d4dce4 100%);
     }
+
+    html[data-mode="night"] {
+      --color-bg: #0D0F10;
+      --color-bg-alt: #1C2A35;
+      --color-surface: #1C2A35;
+      --color-accent: #1ED3E8;
+      --color-accent-soft: #D64B8C;
+      --color-highlight: #FF9B2F;
+      --color-text: #F5F5F5;
+      --color-text-muted: #C4C4C4;
+      --genre-card-surface: color-mix(in srgb, var(--color-bg-alt) 70%, #000000 30%);
+      --toolbar-btn-bg: color-mix(in srgb, var(--color-surface) 72%, #000000 28%);
+      --toolbar-btn-fg: #fafafa;
+      --toolbar-btn-border: var(--color-accent);
+      --link: var(--color-accent-soft);
+      --error: #FF9B2F;
+      --bg-gradient: linear-gradient(180deg, #060809 0%, var(--color-bg) 45%, #020304 100%);
+    }
+
     * { box-sizing: border-box; }
+
     body {
       margin: 0;
-      background: var(--bg);
-      color: var(--text);
+      min-height: 100vh;
+      background: var(--color-bg);
+      background-image: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--color-text);
       font-family: "Source Sans 3", system-ui, sans-serif;
       line-height: 1.55;
+      position: relative;
     }
-    main {
+
+    html[data-mode="night"] body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.55;
+      background-image:
+        radial-gradient(1.5px 1.5px at 12% 18%, rgba(30, 211, 232, 0.9), transparent),
+        radial-gradient(1px 1px at 28% 42%, rgba(255, 255, 255, 0.65), transparent),
+        radial-gradient(1.5px 1.5px at 44% 12%, rgba(255, 155, 47, 0.75), transparent),
+        radial-gradient(1px 1px at 62% 58%, rgba(30, 211, 232, 0.55), transparent),
+        radial-gradient(1.5px 1.5px at 78% 28%, rgba(214, 75, 140, 0.6), transparent),
+        radial-gradient(1px 1px at 88% 72%, rgba(255, 255, 255, 0.5), transparent);
+      background-size: 280px 280px;
+    }
+
+    .site-header {
+      position: relative;
+      z-index: 2;
       max-width: 40rem;
       margin: 0 auto;
-      padding: 2.5rem 1.25rem 4rem;
+      padding: 1rem 1.25rem 0;
+      display: flex;
+      justify-content: flex-end;
     }
+
+    .mode-toggle {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      padding: 0;
+      border-radius: 10px;
+      border: 2px solid var(--toolbar-btn-border);
+      background: var(--toolbar-btn-bg);
+      color: var(--toolbar-btn-fg);
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .mode-toggle:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px color-mix(in srgb, var(--color-accent) 30%, transparent);
+    }
+
+    .mode-toggle:focus-visible {
+      outline: 2px solid var(--color-accent);
+      outline-offset: 2px;
+    }
+
+    .mode-toggle svg {
+      display: none;
+      width: 1.35rem;
+      height: 1.35rem;
+    }
+
+    .mode-toggle svg.is-visible {
+      display: block;
+    }
+
+    .mode-toggle svg[hidden] {
+      display: none !important;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 0.5rem 1.25rem 4rem;
+    }
+
     h1, h2 {
-      font-family: Cinzel, Georgia, serif;
+      font-family: Orbitron, system-ui, sans-serif;
       font-weight: 700;
       line-height: 1.25;
+      color: var(--color-accent);
+      text-shadow: 0 0 20px color-mix(in srgb, var(--color-accent) 35%, transparent);
     }
+
     h1 { font-size: 2rem; margin: 0 0 0.4rem; }
-    h2 { font-size: 1.2rem; margin: 0 0 0.6rem; }
-    .lede { color: var(--muted); font-size: 1.15rem; margin: 0 0 2rem; }
+    h2 { font-size: 1.15rem; margin: 0 0 0.6rem; }
+
+    .lede {
+      color: var(--color-text-muted);
+      font-size: 1.15rem;
+      margin: 0 0 2rem;
+    }
+
     section {
-      background: var(--card);
-      border: 1px solid color-mix(in srgb, var(--gold) 45%, var(--bg));
+      background: var(--genre-card-surface);
+      border: 1px solid color-mix(in srgb, var(--color-accent) 50%, transparent);
       border-radius: 12px;
       padding: 1.25rem 1.35rem;
       margin-bottom: 1rem;
+      box-shadow:
+        0 8px 24px color-mix(in srgb, #000 12%, transparent),
+        inset 0 1px 0 color-mix(in srgb, #fff 40%, transparent);
     }
+
+    html[data-mode="night"] section {
+      box-shadow:
+        0 14px 32px rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 color-mix(in srgb, var(--color-accent) 12%, transparent);
+    }
+
     ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+
     .plans {
       display: grid;
       gap: 0.75rem;
       margin-top: 0.75rem;
     }
+
     @media (min-width: 36rem) {
       .plans { grid-template-columns: 1fr 1fr; }
     }
+
     .plan {
       display: block;
       text-decoration: none;
       color: inherit;
-      border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--card));
+      border: 2px solid color-mix(in srgb, var(--color-accent) 45%, transparent);
       border-radius: 10px;
       padding: 0.9rem 1rem;
-      background: var(--card);
+      background: color-mix(in srgb, var(--genre-card-surface) 92%, var(--color-accent) 8%);
       cursor: pointer;
       transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
     }
+
     .plan:hover,
     .plan:focus-visible {
-      border-color: var(--accent);
-      box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 25%, transparent);
+      border-color: var(--color-accent);
+      box-shadow: 0 4px 16px color-mix(in srgb, var(--color-accent) 28%, transparent);
       transform: translateY(-1px);
       outline: none;
     }
-    .plan strong { display: block; font-size: 1.15rem; }
-    .plan span { color: var(--muted); font-size: 0.95rem; }
+
+    .plan strong {
+      display: block;
+      font-size: 1.15rem;
+      color: var(--color-accent);
+    }
+
+    .plan span { color: var(--color-text-muted); font-size: 0.95rem; }
+
     .plan-hint {
       margin: 0.75rem 0 0;
       font-size: 0.9rem;
-      color: var(--muted);
+      color: var(--color-text-muted);
     }
-    a { color: #3d5c5b; }
-    footer { margin-top: 1.5rem; color: var(--muted); font-size: 0.9rem; }
+
+    a { color: var(--link); }
+    a:hover { color: var(--color-accent); }
+
+    footer {
+      margin-top: 1.5rem;
+      color: var(--color-text-muted);
+      font-size: 0.9rem;
+    }
+
     #checkout-success {
       display: none;
-      background: color-mix(in srgb, var(--accent) 18%, var(--card));
-      border: 1px solid var(--accent);
+      background: color-mix(in srgb, var(--color-accent) 14%, var(--genre-card-surface));
+      border: 1px solid var(--color-accent);
       border-radius: 12px;
       padding: 1rem 1.25rem;
       margin-bottom: 1rem;
     }
+
     #checkout-success.visible { display: block; }
+
     #plan-load-error {
       display: none;
-      color: #8b4513;
+      color: var(--error);
       font-size: 0.9rem;
       margin-top: 0.5rem;
     }
+
     #plan-load-error.visible { display: block; }
   </style>
 </head>
 <body>
+  <header class="site-header">
+    <button type="button" class="mode-toggle" id="mode-toggle" aria-label="Switch to night mode" title="Switch to night mode">
+      <svg id="icon-moon" class="is-visible" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M21 14.5A8.5 8.5 0 1 1 9.5 3 7 7 0 0 0 21 14.5z"/>
+      </svg>
+      <svg id="icon-sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/>
+        <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M12 3v1.5M12 19.5V21M4.2 4.2l1.1 1.1M18.7 18.7l1.1 1.1M3 12h1.5M19.5 12H21M4.2 19.8l1.1-1.1M18.7 5.3l1.1-1.1"/>
+      </svg>
+    </button>
+  </header>
+  <script>
+    (function () {
+      var mode = document.documentElement.getAttribute('data-mode') || 'day';
+      var isDay = mode === 'day';
+      var moon = document.getElementById('icon-moon');
+      var sun = document.getElementById('icon-sun');
+      if (moon) moon.classList.toggle('is-visible', isDay);
+      if (sun) sun.classList.toggle('is-visible', !isDay);
+    })();
+  </script>
+
   <main>
     <div id="checkout-success" role="status">
       <h2 style="margin-top:0">Thanks for subscribing</h2>
@@ -151,6 +326,40 @@
   </main>
   <script>
     (function () {
+      var STORAGE_KEY = 'spellpath-mode';
+      var root = document.documentElement;
+      var btn = document.getElementById('mode-toggle');
+      var iconMoon = document.getElementById('icon-moon');
+      var iconSun = document.getElementById('icon-sun');
+
+      function syncToggleUi() {
+        var mode = root.getAttribute('data-mode') || 'day';
+        var isDay = mode === 'day';
+        if (iconMoon) iconMoon.classList.toggle('is-visible', isDay);
+        if (iconSun) iconSun.classList.toggle('is-visible', !isDay);
+        if (btn) {
+          var next = isDay ? 'night' : 'day';
+          btn.setAttribute('aria-label', 'Switch to ' + next + ' mode');
+          btn.setAttribute('title', 'Switch to ' + next + ' mode');
+        }
+      }
+
+      function setMode(mode) {
+        if (mode !== 'day' && mode !== 'night') mode = 'day';
+        root.setAttribute('data-mode', mode);
+        root.setAttribute('data-theme', 'scifi');
+        try { localStorage.setItem(STORAGE_KEY, mode); } catch (e) { /* ignore */ }
+        syncToggleUi();
+      }
+
+      if (btn) {
+        btn.addEventListener('click', function () {
+          var current = root.getAttribute('data-mode') || 'day';
+          setMode(current === 'day' ? 'night' : 'day');
+        });
+      }
+      syncToggleUi();
+
       var API = 'https://api.spellpath.app';
       var params = new URLSearchParams(window.location.search);
       if (params.get('checkout') === 'success') {

@@ -13,6 +13,16 @@ Or manually: `git pull`, set `SPELLPATH_DB_PATH`, `nvm use 24`, `pm2 restart spe
 
 Expected: `GET https://api.spellpath.app/api/health` → `{"ok":true}` (minimal health).
 
+### Brochure (`spellpath.app`) — after editing `landing/index.html`
+
+The apex site is **static HTML**, not served from the Node app. Copy the file into Apache docroot on sea0:
+
+```bash
+cp ~/spellpath-extension/landing/index.html /var/www/spellpath.app/docroot/index.html
+```
+
+Verify: open `https://spellpath.app/#plans` — sci-fi day/night toggle (uses `localStorage` key `spellpath-mode`, same as the extension). Consumer **Billing** gear opens this page when not subscribed.
+
 ## 2. Database path + backup
 
 In `~/spellpath-extension/.env`:

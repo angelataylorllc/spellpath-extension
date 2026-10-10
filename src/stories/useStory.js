@@ -27,7 +27,7 @@ function applyLoadedBeatSideEffects(engine, beatData, setScaffold) {
   };
 }
 
-export const useStory = () => {
+export const useStory = ({ onEntitlementUpdate } = {}) => {
   const engineRef = useRef(new StoryEngine());
   const engine = engineRef.current;
 
@@ -94,6 +94,9 @@ export const useStory = () => {
       });
       engine.initFromScaffold(scaffoldData);
       setScaffold(scaffoldData);
+      if (scaffoldData.entitlement && onEntitlementUpdate) {
+        onEntitlementUpdate(scaffoldData.entitlement);
+      }
       syncState();
 
       const ctx = engine.getPromptContext();
@@ -129,7 +132,7 @@ export const useStory = () => {
       setIsLoading(false);
       setLoadingMessage(null);
     }
-  }, [engine, syncState]);
+  }, [engine, syncState, onEntitlementUpdate]);
 
   // Load the current beat's content from the API
   const loadBeat = useCallback(async ({ loadingHint } = {}) => {
@@ -168,7 +171,7 @@ export const useStory = () => {
         });
       }
     } catch (err) {
-      setError(err?.message || 'Failed to generate beat');
+      setError(err?.message || 'Failed to generate the next part');
     } finally {
       setIsLoading(false);
       setLoadingMessage(null);
@@ -220,7 +223,7 @@ export const useStory = () => {
     }
 
     const loadingHint = remedial
-      ? `Crafting a practice beat on ${remedial.concept}…`
+      ? `Crafting a practice part on ${remedial.concept}…`
       : direction?.label
         ? `Following ${direction.speaker ? `${direction.speaker}: ` : ''}${direction.label}…`
         : null;

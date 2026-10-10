@@ -14,23 +14,28 @@
   border-left: 3px solid color-mix(in srgb, var(--color-highlight) 70%, var(--color-accent));
 }
 
+.story-free-status {
+  color: var(--color-text);
+  text-shadow: 0 1px 2px color-mix(in srgb, var(--color-bg) 85%, transparent);
+}
+
 :root[data-theme="fantasy"] .story-narrative.genre-card {
-  background-color: color-mix(in srgb, var(--genre-card-surface) 18%, transparent);
+  background-color: color-mix(in srgb, var(--genre-card-surface) 92%, #1a1520 8%);
   background-image: linear-gradient(
     135deg,
-    color-mix(in srgb, var(--color-bg-alt) 22%, transparent),
-    color-mix(in srgb, var(--color-bg) 12%, transparent)
+    color-mix(in srgb, var(--color-bg-alt) 94%, #1a1520 6%),
+    color-mix(in srgb, var(--color-bg) 90%, #1a1520 10%)
   );
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 :root[data-theme="fantasy"] .story-checkpoint {
   position: relative;
   z-index: 1;
-  background: color-mix(in srgb, var(--genre-card-surface) 45%, transparent);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--genre-card-surface) 88%, #1a1520 12%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 .story-narrative__toolbar {

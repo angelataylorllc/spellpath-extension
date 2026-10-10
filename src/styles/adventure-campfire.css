@@ -69,7 +69,7 @@
   bottom: -16px;
   left: -28px;
   width: min(420px, 68vw);
-  height: min(360px, 50vh);
+  height: min(280px, 38vh);
   pointer-events: none;
 }
 

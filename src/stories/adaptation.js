@@ -56,7 +56,7 @@ export function getAdaptationNotice({
     return {
       type: 'remedial',
       concept,
-      message: `We'll take an extra beat to revisit ${concept} before moving on.`,
+      message: `We'll take an extra part to revisit ${concept} before moving on.`,
     };
   }
 
@@ -73,12 +73,12 @@ export function getScaffoldAdjustmentNotice(adjustment) {
   if (adjustment.action === 'insert' && Array.isArray(adjustment.beats) && adjustment.beats.length > 0) {
     const title = adjustment.beats[0]?.title || adjustment.beats[0]?.concept;
     return title
-      ? `The path now includes an extra beat: ${title}.`
-      : 'The story path was extended with an extra practice beat.';
+      ? `The path now includes an extra part: ${title}.`
+      : 'The story path was extended with an extra practice part.';
   }
 
   if (adjustment.action === 'annotate') {
-    return 'The upcoming beat was tuned to match what you need.';
+    return 'The upcoming part was tuned to match what you need.';
   }
 
   if (adjustment.action === 'skip') {

@@ -1,5 +1,10 @@
+import { useEffect } from 'react';
 import { filterUnusedDirections } from '../../../lib/steerDirections.js';
 import StoryBeat from '../../stories/StoryBeat';
+import { IS_CONSUMER } from '../../config/edition';
+import { useAuth } from '../../contexts/AuthContext';
+import { fetchBillingStatus } from '../../services/billingApi';
+import FreeStoryStatus from '../FreeStoryStatus';
 import SceneShell from '../SceneShell';
 import Toolbar from '../Toolbar';
 
@@ -21,7 +26,23 @@ export default function StoryScreen({
   onOpenSettings,
   toolbarAuthProps,
   settings,
+  entitlement,
 }) {
+  const { setEntitlement } = useAuth();
+
+  useEffect(() => {
+    if (!IS_CONSUMER) return;
+    let cancelled = false;
+    fetchBillingStatus()
+      .then(status => {
+        if (!cancelled && status.entitlement) setEntitlement(status.entitlement);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [setEntitlement]);
+
   const taughtForSteer = [
     ...(learnerProfile?.confirmedUnderstandings || []),
     ...storySoFar.map(b => b.concept).filter(Boolean),
@@ -37,13 +58,14 @@ export default function StoryScreen({
     <SceneShell contentClassName="scene__content scene__content--story" settings={settings}>
       <div className="mb-6 text-center sm:text-left story-chrome">
         <Toolbar onOpenSettings={onOpenSettings} {...toolbarAuthProps} />
+        {IS_CONSUMER && <FreeStoryStatus entitlement={entitlement} inStory />}
         <h2 className="text-2xl font-bold genre-title mb-2">Your Story</h2>
         <div className="flex items-center gap-3 mb-1">
           <p className="ui-meta">
-            Beat {beatIndex + 1} of {totalBeats}
+            Part {beatIndex + 1} of {totalBeats}
           </p>
           {scaffold?.beats?.[beatIndex]?.isRemedial && (
-            <span className="story-remedial-badge">Practice beat</span>
+            <span className="story-remedial-badge">Practice part</span>
           )}
         </div>
         {totalBeats > 0 && (
@@ -90,7 +112,7 @@ export default function StoryScreen({
             disabled={isLoading}
             className="w-full genre-button ui-btn px-4 py-3 rounded-lg"
           >
-            {isLoading ? 'Loading next beat...' : (beatIndex + 1 >= totalBeats ? 'Finish Journey' : 'Continue')}
+            {isLoading ? 'Loading next part...' : (beatIndex + 1 >= totalBeats ? 'Finish Journey' : 'Continue')}
           </button>
         </div>
       )}
@@ -98,7 +120,7 @@ export default function StoryScreen({
       {storySoFar.length > 0 && (
         <details className="mt-6 genre-card p-4 rounded-lg story-chrome story-recap">
           <summary className="ui-meta font-medium cursor-pointer">
-            Story so far ({storySoFar.length} beat{storySoFar.length !== 1 ? 's' : ''})
+            Story so far ({storySoFar.length} part{storySoFar.length !== 1 ? 's' : ''})
           </summary>
           <ul className="mt-2 space-y-1 ui-meta">
             {storySoFar.map((beat, i) => (

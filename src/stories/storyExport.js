@@ -189,7 +189,7 @@ function renderStoryPrintHtml(archive) {
         : '';
 
       return `<section class="beat">
-        <h2>Beat ${i + 1}${beat.beatTitle ? `: ${escapeHtml(beat.beatTitle)}` : ''}</h2>
+        <h2>Part ${i + 1}${beat.beatTitle ? `: ${escapeHtml(beat.beatTitle)}` : ''}</h2>
         ${renderParagraphHtml(beat.narrative, beat.narrativeBlocks)}
         ${checkpointHtml}
       </section>`;
@@ -250,7 +250,7 @@ function renderStoryPrintHtml(archive) {
 </head>
 <body>
   <h1>${title}</h1>
-  <p class="meta">${[genre, mode].filter(Boolean).join(' · ')} · ${archive.beats?.length || 0} beats</p>
+  <p class="meta">${[genre, mode].filter(Boolean).join(' · ')} · ${archive.beats?.length || 0} parts</p>
   ${beatsHtml}
   <footer>
     Exported from SpellPath · ${escapeHtml(archive.exportedAt)}<br>

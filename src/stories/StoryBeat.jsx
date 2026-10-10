@@ -67,7 +67,7 @@ const StoryBeat = ({
               className="story-skip-btn"
               aria-label="Show full story text"
             >
-              Skip →
+              Show all →
             </button>
           )}
         </div>

@@ -18,7 +18,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { useStory, STORY_PHASES } from '../stories/useStory';
 import {
   buildSessionArchive,
-  downloadStoryJson,
   openStoryPdf,
   persistSessionLog,
 } from '../stories/storyExport';
@@ -46,7 +45,16 @@ import CompleteScreen from './screens/CompleteScreen';
 
 function App() {
   const { mode, setTheme } = useTheme();
-  const { authEnabled, user, loading: authLoading, error: authError, signIn, signOut } = useAuth();
+  const {
+    authEnabled,
+    user,
+    entitlement,
+    setEntitlement,
+    loading: authLoading,
+    error: authError,
+    signIn,
+    signOut,
+  } = useAuth();
   const [subject, setSubject] = useState('');
   const [learningGoals, setLearningGoals] = useState('');
   const [learningFocus, setLearningFocus] = useState('');
@@ -88,7 +96,7 @@ function App() {
     submitCheckpoint,
     continueStory,
     reset: resetEngine,
-  } = useStory();
+  } = useStory({ onEntitlementUpdate: setEntitlement });
 
   const authorCards = selectedGenre ? cardsForGenre(selectedGenre) : [];
   const selectedAuthorCard = authorCards.find(c => c.id === authorPresetId) || null;
@@ -152,6 +160,19 @@ function App() {
     const genre = STORY_GENRES.find(g => g.id === selectedGenre);
     if (genre?.theme) setTheme(genre.theme);
   }, [selectedGenre, uiPhase, setTheme]);
+
+  useEffect(() => {
+    if (!IS_CONSUMER || !user || uiPhase !== 'input') return;
+    let cancelled = false;
+    fetchBillingStatus()
+      .then(status => {
+        if (!cancelled && status.entitlement) setEntitlement(status.entitlement);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [user, uiPhase, setEntitlement]);
 
   // --- Handlers ---
 
@@ -504,6 +525,7 @@ function App() {
     onOpenSettings: IS_BYOK ? () => setShowSettings(true) : undefined,
     toolbarAuthProps,
     settings,
+    entitlement: IS_CONSUMER ? entitlement : null,
   };
 
   if (uiPhase === 'input') {
@@ -633,7 +655,6 @@ function App() {
       <CompleteScreen
         subject={subject}
         storySoFar={storySoFar}
-        onDownloadJson={() => downloadStoryJson(buildArchive())}
         onDownloadPdf={() => openStoryPdf(buildArchive())}
         onStartOver={handleStartOver}
         {...chrome}
