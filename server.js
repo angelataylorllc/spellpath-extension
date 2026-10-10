@@ -16,6 +16,7 @@ import { normalizeMotivation } from './lib/motivation.js';
 import { normalizeLearningFocus } from './lib/learningFocus.js';
 import { normalizeAge } from './lib/ageBand.js';
 import { resolveAuthorVoiceGuide } from './server/lib/resolveAuthorVoice.js';
+import { SPELLPATH_EDITION_HEADER } from './server/lib/editionHeader.js';
 import { getAuthConfig } from './server/lib/auth/config.js';
 import { createRequireAuthMiddleware } from './server/lib/auth/middleware.js';
 import {
@@ -91,7 +92,7 @@ app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header(
     'Access-Control-Allow-Headers',
-    `Origin, X-Requested-With, Content-Type, Accept, Authorization, ${SPELLPATH_PROVIDER_HEADER}, ${SPELLPATH_API_KEY_HEADER}, ${SPELLPATH_BYOK_HEADER}, X-SpellPath-Story-Session`,
+    `Origin, X-Requested-With, Content-Type, Accept, Authorization, ${SPELLPATH_PROVIDER_HEADER}, ${SPELLPATH_API_KEY_HEADER}, ${SPELLPATH_BYOK_HEADER}, X-SpellPath-Story-Session, ${SPELLPATH_EDITION_HEADER}, X-SpellPath-Edition`,
   );
   res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') return res.sendStatus(200);
