@@ -63,10 +63,23 @@
     .plan span { color: var(--muted); font-size: 0.95rem; }
     a { color: #3d5c5b; }
     footer { margin-top: 1.5rem; color: var(--muted); font-size: 0.9rem; }
+    #checkout-success {
+      display: none;
+      background: color-mix(in srgb, var(--accent) 18%, var(--card));
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+    }
+    #checkout-success.visible { display: block; }
   </style>
 </head>
 <body>
   <main>
+    <div id="checkout-success" role="status">
+      <h2 style="margin-top:0">Thanks for subscribing</h2>
+      <p style="margin-bottom:0">Open the <strong>SpellPath</strong> extension, sign in if needed, and click <strong>Billing</strong> in the toolbar (next to sign out) to change or cancel your plan in Stripe.</p>
+    </div>
     <h1>SpellPath</h1>
     <p class="lede">A Chrome extension that turns a topic you want to learn into a short, interactive choose-your-path story.</p>
 
@@ -93,7 +106,7 @@
     <section>
       <h2>Billing and canceling</h2>
       <p>Angela Taylor LLC sells SpellPath. Payments go through Stripe — we never see your card number. Checkout opens in a normal browser tab.</p>
-      <p>To change or cancel a plan, sign in to the extension and open billing management. That takes you to Stripe’s customer portal, where you can cancel anytime. The current month stays available until it ends. You can also email <a href="mailto:hello@angelataylorllc.com">hello@angelataylorllc.com</a>.</p>
+      <p>To change or cancel a plan, sign in to the SpellPath extension and click <strong>Billing</strong> in the toolbar (next to sign out). That opens Stripe’s customer portal, where you can cancel anytime. The current month stays available until it ends. You can also email <a href="mailto:hello@angelataylorllc.com">hello@angelataylorllc.com</a>.</p>
     </section>
 
     <section>
@@ -109,5 +122,14 @@
       <p>Sold by Angela Taylor LLC · <a href="mailto:hello@angelataylorllc.com">hello@angelataylorllc.com</a></p>
     </footer>
   </main>
+  <script>
+    (function () {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('checkout') === 'success') {
+        var el = document.getElementById('checkout-success');
+        if (el) el.classList.add('visible');
+      }
+    })();
+  </script>
 </body>
 </html>

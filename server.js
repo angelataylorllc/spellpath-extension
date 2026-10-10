@@ -26,7 +26,7 @@ import {
 import { createStorySession, recordStoryBeat } from './server/lib/billing/abuseGuards.js';
 import { createRequireStorySessionMiddleware } from './server/lib/billing/storySessionMiddleware.js';
 import { databasePath } from './server/lib/billing/store.js';
-import { entitlementFor } from './server/lib/billing/store.js';
+import { entitlementFor, getUser } from './server/lib/billing/store.js';
 import { PLANS, priceIdFor } from './server/lib/billing/plans.js';
 import {
   constructEvent,
@@ -126,14 +126,16 @@ app.get('/api/billing/status', ...guarded, (req, res) => {
   if (!req.spellpathBilling.metered) {
     return res.json({ metered: false, mode: req.spellpathBilling.mode });
   }
+  const sub = req.spellpathUser.sub;
   return res.json({
     metered: true,
     mode: req.spellpathBilling.mode,
     checkoutAvailable: stripeConfigured(),
+    portalAvailable: Boolean(getUser(sub)?.stripe_customer_id),
     plans: Object.values(PLANS)
       .filter(plan => plan.id !== 'free')
       .map(plan => ({ id: plan.id, label: plan.label, available: Boolean(priceIdFor(plan.id)) })),
-    entitlement: entitlementFor(req.spellpathUser.sub),
+    entitlement: entitlementFor(sub),
   });
 });
 

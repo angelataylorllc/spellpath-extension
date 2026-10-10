@@ -68,7 +68,7 @@ function SettingsIcon() {
   );
 }
 
-const Toolbar = ({ onOpenSettings, onSignOut, user, leading }) => {
+const Toolbar = ({ onOpenSettings, onOpenBilling, onSignOut, user, leading }) => {
   const { mode, toggleMode } = useTheme();
 
   return (
@@ -79,6 +79,16 @@ const Toolbar = ({ onOpenSettings, onSignOut, user, leading }) => {
           <span className="ui-meta text-sm hidden sm:inline" title={user.email}>
             {user.name || user.email}
           </span>
+        )}
+        {onOpenBilling && (
+          <button
+            type="button"
+            onClick={onOpenBilling}
+            className="toolbar-btn toolbar-btn--text ui-meta text-sm px-2"
+            title="Manage subscription in Stripe"
+          >
+            Billing
+          </button>
         )}
         {onSignOut && (
           <button

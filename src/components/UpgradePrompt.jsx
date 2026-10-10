@@ -12,6 +12,7 @@ const PLAN_COPY = {
  */
 export default function UpgradePrompt({ code, entitlement, onBack }) {
   const [plans, setPlans] = useState([]);
+  const [portalAvailable, setPortalAvailable] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
 
@@ -19,10 +20,15 @@ export default function UpgradePrompt({ code, entitlement, onBack }) {
     let cancelled = false;
     fetchBillingStatus()
       .then(status => {
-        if (!cancelled) setPlans((status.plans || []).filter(plan => plan.available));
+        if (cancelled) return;
+        setPlans((status.plans || []).filter(plan => plan.available));
+        setPortalAvailable(Boolean(status.portalAvailable));
       })
       .catch(() => {
-        if (!cancelled) setPlans([]);
+        if (!cancelled) {
+          setPlans([]);
+          setPortalAvailable(false);
+        }
       });
     return () => {
       cancelled = true;
@@ -108,14 +114,14 @@ export default function UpgradePrompt({ code, entitlement, onBack }) {
         >
           Back to start
         </button>
-        {outOfPlan && (
+        {portalAvailable && (
           <button
             type="button"
             onClick={handlePortal}
             disabled={Boolean(busy)}
             className="flex-1 genre-button ui-btn px-4 py-3 rounded-lg opacity-90"
           >
-            Manage subscription
+            Manage billing
           </button>
         )}
       </div>
