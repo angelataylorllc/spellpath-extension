@@ -38,6 +38,7 @@ Cron example (daily 3am):
    - `STRIPE_WEBHOOK_SECRET=whsec_…`
    - `STRIPE_PRICE_BASIC=price_…`
    - `STRIPE_PRICE_PLUS=price_…`
+   - `STRIPE_PAYMENT_LINK_BASIC` / `STRIPE_PAYMENT_LINK_PLUS` — Payment links for [landing/index.html](../landing/index.html) plan cards
    - `SPELLPATH_CHECKOUT_RETURN_URL=https://spellpath.app`
 
 4. `pm2 restart spellpath-api` and send a test checkout (small plan, real card, cancel in portal).

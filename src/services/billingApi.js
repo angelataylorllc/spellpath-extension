@@ -40,6 +40,14 @@ export async function openBillingPortal() {
   return openInTab(url);
 }
 
+/** spellpath.app plan cards (Stripe Payment Links). No sign-in required. */
+export async function openSubscribeStorefront() {
+  const response = await fetch(`${API_BASE}/api/billing/storefront`);
+  const body = await response.json().catch(() => ({}));
+  const url = body.storefrontUrl || 'https://spellpath.app/#plans';
+  return openInTab(url);
+}
+
 function openInTab(url) {
   if (!url) throw new Error('No checkout URL returned');
   if (globalThis.chrome?.tabs?.create) {

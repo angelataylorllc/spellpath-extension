@@ -122,16 +122,40 @@ app.get('/api/auth/me', ...guarded, (req, res) => {
 // Billing
 // ---------------------------------------------------------------------------
 
+/** Public plan links for spellpath.app (Stripe Payment Links). */
+app.get('/api/billing/storefront', (_req, res) => {
+  const storefront = String(process.env.SPELLPATH_CHECKOUT_RETURN_URL || 'https://spellpath.app').replace(/\/$/, '');
+  const basic = String(process.env.STRIPE_PAYMENT_LINK_BASIC || '').trim();
+  const plus = String(process.env.STRIPE_PAYMENT_LINK_PLUS || '').trim();
+  return res.json({
+    storefrontUrl: `${storefront}/#plans`,
+    plans: [
+      { id: 'basic', priceLabel: '$5 / month', detail: '20 stories', checkoutUrl: basic || null },
+      { id: 'plus', priceLabel: '$10 / month', detail: '50 stories', checkoutUrl: plus || null },
+    ],
+  });
+});
+
 app.get('/api/billing/status', ...guarded, (req, res) => {
-  if (!req.spellpathBilling.metered) {
-    return res.json({ metered: false, mode: req.spellpathBilling.mode });
-  }
   const sub = req.spellpathUser.sub;
+  const portalAvailable = Boolean(getUser(sub)?.stripe_customer_id);
+  if (!req.spellpathBilling.metered) {
+    return res.json({
+      metered: false,
+      mode: req.spellpathBilling.mode,
+      portalAvailable,
+      checkoutAvailable: stripeConfigured(),
+      entitlement: entitlementFor(sub),
+      plans: Object.values(PLANS)
+        .filter(plan => plan.id !== 'free')
+        .map(plan => ({ id: plan.id, label: plan.label, available: Boolean(priceIdFor(plan.id)) })),
+    });
+  }
   return res.json({
     metered: true,
     mode: req.spellpathBilling.mode,
     checkoutAvailable: stripeConfigured(),
-    portalAvailable: Boolean(getUser(sub)?.stripe_customer_id),
+    portalAvailable,
     plans: Object.values(PLANS)
       .filter(plan => plan.id !== 'free')
       .map(plan => ({ id: plan.id, label: plan.label, available: Boolean(priceIdFor(plan.id)) })),

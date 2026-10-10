@@ -242,6 +242,16 @@ export const useStory = () => {
     syncState();
   }, [engine, syncState]);
 
+  /** Same plan UI as quota block — e.g. Billing gear when no Stripe customer yet. */
+  const openSubscribePlans = useCallback(() => {
+    setError(null);
+    setIsLoading(false);
+    setLoadingMessage(null);
+    setQuotaBlock({ code: 'free_limit', entitlement: null });
+    engine.setPhase(STORY_PHASES.SCAFFOLD);
+    syncState();
+  }, [engine, syncState]);
+
   return {
     phase,
     scaffold,
@@ -260,5 +270,6 @@ export const useStory = () => {
     submitCheckpoint,
     continueStory,
     reset,
+    openSubscribePlans,
   };
 };

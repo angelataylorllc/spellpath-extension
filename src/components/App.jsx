@@ -8,10 +8,10 @@ import '../styles/adventure-campfire.css';
 import '../styles/adventure-wind.css';
 import { STORY_GENRES } from '../config/genres';
 import { IS_BYOK, IS_CONSUMER } from '../config/edition';
-import { fetchBillingStatus, openBillingPortal } from '../services/billingApi';
 import { cardsForGenre, findAuthorCardById, authorListedForGenre } from '../config/authorVoice';
 import { useTheme } from '../contexts/ThemeContext';
 import { Settings } from './Settings';
+import { fetchBillingStatus, openBillingPortal, openSubscribeStorefront } from '../services/billingApi';
 import { LoginGate } from './LoginGate';
 import AuthLoadingScreen from './AuthLoadingScreen';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,9 +55,6 @@ function App() {
   const [authorStyleOther, setAuthorStyleOther] = useState('');
   const [selectedGenre, setSelectedGenre] = useState('');
   const [showSettings, setShowSettings] = useState(false);
-  const [billingMetered, setBillingMetered] = useState(false);
-  const [portalAvailable, setPortalAvailable] = useState(false);
-
   // Intake quiz state
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [quizData, setQuizData] = useState(null);
@@ -115,45 +112,6 @@ function App() {
       learnerProfile,
       intakeAnswers: userAnswers,
     });
-
-  useEffect(() => {
-    if (!IS_CONSUMER || !user) {
-      setBillingMetered(false);
-      setPortalAvailable(false);
-      return undefined;
-    }
-    let cancelled = false;
-    fetchBillingStatus()
-      .then(status => {
-        if (cancelled) return;
-        setBillingMetered(Boolean(status.metered));
-        setPortalAvailable(Boolean(status.portalAvailable));
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setBillingMetered(false);
-          setPortalAvailable(false);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
-
-  const handleOpenBilling = async () => {
-    if (portalAvailable) {
-      try {
-        await openBillingPortal();
-      } catch (err) {
-        globalThis.alert(err?.message || 'Could not open billing.');
-      }
-      return;
-    }
-    globalThis.alert(
-      'After you use your free stories, subscribe from the upgrade screen when prompted. '
-        + 'The Billing button then opens Stripe to change or cancel your plan.',
-    );
-  };
 
   useEffect(() => {
     if (enginePhase !== STORY_PHASES.COMPLETE || storySoFar.length === 0 || sessionLogged) return;
@@ -501,6 +459,19 @@ function App() {
     setUiPhase('input');
   };
 
+  const handleOpenBilling = async () => {
+    try {
+      const status = await fetchBillingStatus();
+      if (status.entitlement?.subscribed) {
+        await openBillingPortal();
+        return;
+      }
+      await openSubscribeStorefront();
+    } catch (err) {
+      window.alert(err?.message || 'Could not open billing.');
+    }
+  };
+
   // --- Render ---
 
   if (authEnabled && authLoading) {
@@ -521,11 +492,14 @@ function App() {
     ? {
         user,
         onSignOut: signOut,
-        onOpenBilling:
-          IS_CONSUMER && billingMetered ? handleOpenBilling : undefined,
+        onOpenBilling: IS_CONSUMER && user ? () => void handleOpenBilling() : undefined,
       }
     : {};
-  const settings = IS_BYOK && showSettings && <Settings onClose={() => setShowSettings(false)} />;
+  const settings = (
+    <>
+      {IS_BYOK && showSettings && <Settings onClose={() => setShowSettings(false)} />}
+    </>
+  );
   const chrome = {
     onOpenSettings: IS_BYOK ? () => setShowSettings(true) : undefined,
     toolbarAuthProps,

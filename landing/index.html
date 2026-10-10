@@ -55,12 +55,30 @@
       .plans { grid-template-columns: 1fr 1fr; }
     }
     .plan {
+      display: block;
+      text-decoration: none;
+      color: inherit;
       border: 1px solid color-mix(in srgb, var(--accent) 40%, var(--card));
       border-radius: 10px;
       padding: 0.9rem 1rem;
+      background: var(--card);
+      cursor: pointer;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+    }
+    .plan:hover,
+    .plan:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 2px 10px color-mix(in srgb, var(--accent) 25%, transparent);
+      transform: translateY(-1px);
+      outline: none;
     }
     .plan strong { display: block; font-size: 1.15rem; }
     .plan span { color: var(--muted); font-size: 0.95rem; }
+    .plan-hint {
+      margin: 0.75rem 0 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
     a { color: #3d5c5b; }
     footer { margin-top: 1.5rem; color: var(--muted); font-size: 0.9rem; }
     #checkout-success {
@@ -72,13 +90,20 @@
       margin-bottom: 1rem;
     }
     #checkout-success.visible { display: block; }
+    #plan-load-error {
+      display: none;
+      color: #8b4513;
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    #plan-load-error.visible { display: block; }
   </style>
 </head>
 <body>
   <main>
     <div id="checkout-success" role="status">
       <h2 style="margin-top:0">Thanks for subscribing</h2>
-      <p style="margin-bottom:0">Open the <strong>SpellPath</strong> extension, sign in if needed, and click <strong>Billing</strong> in the toolbar (next to sign out) to change or cancel your plan in Stripe.</p>
+      <p style="margin-bottom:0">Open the <strong>SpellPath</strong> extension, sign in with the same Google account you used at checkout, and keep learning. Use <strong>Billing</strong> in the toolbar to change or cancel in Stripe.</p>
     </div>
     <h1>SpellPath</h1>
     <p class="lede">A Chrome extension that turns a topic you want to learn into a short, interactive choose-your-path story.</p>
@@ -88,25 +113,27 @@
       <p>You pick a topic and a genre. SpellPath writes a story with checkpoints so you have to understand the material to keep going. Sign in with Google. The first three stories are free.</p>
     </section>
 
-    <section>
+    <section id="plans">
       <h2>Plans</h2>
-      <p>After the three free stories, subscribe monthly. Unused stories do not roll over.</p>
+      <p>After the three free stories, subscribe monthly. Unused stories do not roll over. Checkout opens in Stripe.</p>
       <div class="plans">
-        <div class="plan">
+        <a class="plan" id="plan-basic" href="#plans" data-plan="basic">
           <strong>$5 / month</strong>
           <span>20 stories</span>
-        </div>
-        <div class="plan">
+        </a>
+        <a class="plan" id="plan-plus" href="#plans" data-plan="plus">
           <strong>$10 / month</strong>
           <span>50 stories</span>
-        </div>
+        </a>
       </div>
+      <p class="plan-hint">Use the same Google email in the extension as at checkout so your stories unlock.</p>
+      <p id="plan-load-error" role="alert"></p>
     </section>
 
     <section>
       <h2>Billing and canceling</h2>
-      <p>Angela Taylor LLC sells SpellPath. Payments go through Stripe — we never see your card number. Checkout opens in a normal browser tab.</p>
-      <p>To change or cancel a plan, sign in to the SpellPath extension and click <strong>Billing</strong> in the toolbar (next to sign out). That opens Stripe’s customer portal, where you can cancel anytime. The current month stays available until it ends. You can also email <a href="mailto:hello@angelataylorllc.com">hello@angelataylorllc.com</a>.</p>
+      <p>Angela Taylor LLC sells SpellPath. Payments go through Stripe — we never see your card number.</p>
+      <p>To change or cancel a plan, sign in to the SpellPath extension and click <strong>Billing</strong> in the toolbar (next to sign out). That opens Stripe’s customer portal. You can also email <a href="mailto:hello@angelataylorllc.com">hello@angelataylorllc.com</a>.</p>
     </section>
 
     <section>
@@ -124,11 +151,45 @@
   </main>
   <script>
     (function () {
+      var API = 'https://api.spellpath.app';
       var params = new URLSearchParams(window.location.search);
       if (params.get('checkout') === 'success') {
-        var el = document.getElementById('checkout-success');
-        if (el) el.classList.add('visible');
+        var ok = document.getElementById('checkout-success');
+        if (ok) ok.classList.add('visible');
       }
+
+      function wirePlans(storefront) {
+        var errEl = document.getElementById('plan-load-error');
+        var byId = { basic: document.getElementById('plan-basic'), plus: document.getElementById('plan-plus') };
+        (storefront.plans || []).forEach(function (plan) {
+          var el = byId[plan.id];
+          if (!el) return;
+          if (plan.checkoutUrl) {
+            el.href = plan.checkoutUrl;
+            el.setAttribute('rel', 'noopener');
+            el.setAttribute('target', '_blank');
+          } else {
+            el.addEventListener('click', function (e) {
+              e.preventDefault();
+              if (errEl) {
+                errEl.textContent = 'Checkout is not linked yet. Open the SpellPath extension, sign in, and tap Billing — or try again later.';
+                errEl.classList.add('visible');
+              }
+            });
+          }
+        });
+      }
+
+      fetch(API + '/api/billing/storefront')
+        .then(function (r) { return r.json(); })
+        .then(wirePlans)
+        .catch(function () {
+          var errEl = document.getElementById('plan-load-error');
+          if (errEl) {
+            errEl.textContent = 'Could not load checkout links. Open the SpellPath extension and tap Billing.';
+            errEl.classList.add('visible');
+          }
+        });
     })();
   </script>
 </body>
