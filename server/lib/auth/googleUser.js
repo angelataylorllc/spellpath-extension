@@ -40,9 +40,13 @@ export async function fetchGoogleUser(accessToken) {
 /**
  * @param {import('./config.js').getAuthConfig extends () => infer R ? R : never} config
  * @param {{ email: string }} user
+ * @param {{ consumerClient?: boolean }} [options]
  */
-export function assertAllowlisted(config, user) {
+export function assertAllowlisted(config, user, options = {}) {
   if (!config.authRequired) return;
+
+  // Store consumer build — invite list is friends BYOK only.
+  if (options.consumerClient) return;
 
   // Public signup opens the door to any Google account; billing decides what
   // they may actually generate.

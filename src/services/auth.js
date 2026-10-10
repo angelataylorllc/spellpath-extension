@@ -1,3 +1,5 @@
+import { applyEditionHeader } from './editionHeader.js';
+
 const STORAGE_KEY = 'spellpathAuthUser';
 
 export const AUTH_REQUIRED = import.meta.env.VITE_AUTH_REQUIRED !== 'false';
@@ -73,8 +75,10 @@ export async function getAuthorizationHeader() {
  * @param {string} token
  */
 export async function fetchAuthMe(apiBase, token) {
+  const headers = new Headers({ Authorization: `Bearer ${token}` });
+  applyEditionHeader(headers);
   const res = await fetch(`${apiBase.replace(/\/$/, '')}/api/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
+    headers,
   });
 
   const body = await res.json().catch(() => ({}));

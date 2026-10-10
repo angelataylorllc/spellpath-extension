@@ -7,6 +7,7 @@ import {
 } from './apiCredentials';
 import { getAuthorizationHeader } from './auth';
 import { IS_BYOK } from '../config/edition';
+import { applyEditionHeader } from './editionHeader';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
@@ -79,6 +80,7 @@ async function spellpathPost(path, body) {
 
   const authHeader = await getAuthorizationHeader();
   if (authHeader) headers.set('Authorization', authHeader);
+  applyEditionHeader(headers);
 
   if (path === '/api/beat' && activeStorySessionId) {
     headers.set(SPELLPATH_STORY_SESSION_HEADER, activeStorySessionId);

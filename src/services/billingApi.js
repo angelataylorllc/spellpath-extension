@@ -1,4 +1,5 @@
 import { getAuthorizationHeader } from './auth';
+import { applyEditionHeader } from './editionHeader';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:4000';
 
@@ -6,6 +7,7 @@ async function billingFetch(path, options = {}) {
   const headers = new Headers({ 'Content-Type': 'application/json', ...options.headers });
   const authHeader = await getAuthorizationHeader();
   if (authHeader) headers.set('Authorization', authHeader);
+  applyEditionHeader(headers);
 
   const response = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const body = await response.json().catch(() => ({}));

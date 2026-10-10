@@ -13,6 +13,7 @@ import {
   SPELLPATH_API_KEY_HEADER,
   SPELLPATH_BYOK_HEADER,
 } from '../llm/resolveProvider.js';
+import { isConsumerEdition } from '../editionHeader.js';
 import { entitlementFor, refundStory, reserveStory } from './store.js';
 
 function parseBool(value, defaultValue) {
@@ -50,6 +51,12 @@ export function createBillingMiddleware(authConfig = getAuthConfig(), billingCon
 
     if (billingConfig.byokAllowed && requestCarriesKey(req)) {
       req.spellpathBilling = { mode: 'byok', allowPlatformKey: false, metered: false };
+      return next();
+    }
+
+    // Store consumer app: invite list is for friends BYOK only — always metered consumer.
+    if (isConsumerEdition(req)) {
+      req.spellpathBilling = { mode: 'consumer', allowPlatformKey: true, metered: true };
       return next();
     }
 

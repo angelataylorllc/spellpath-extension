@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createBillingMiddleware, getBillingConfig } from './middleware.js';
+import { SPELLPATH_EDITION_HEADER } from '../editionHeader.js';
 import { resolveLLMForRequest, SPELLPATH_API_KEY_HEADER } from '../llm/resolveProvider.js';
 
 const FRIENDS_ONLY = { authRequired: true, allowlist: new Set(['cj@example.com']), publicSignup: false };
@@ -36,6 +37,21 @@ test('a friend with their own key is not metered and never touches the platform 
   const resolved = resolveLLMForRequest(req, SERVER_ENV);
   assert.equal(resolved.billingSource, 'byok');
   assert.equal(resolved.apiKey, 'sk-their-own');
+});
+
+test('store consumer build ignores invite list and is metered', () => {
+  const req = classify(FRIENDS_ONLY, {}, {
+    headers: { [SPELLPATH_EDITION_HEADER]: 'consumer' },
+    spellpathUser: { email: 'cj@example.com', sub: 'g-cj' },
+  });
+
+  assert.equal(req.spellpathBilling.mode, 'consumer');
+  assert.equal(req.spellpathBilling.metered, true);
+  assert.equal(req.spellpathBilling.allowPlatformKey, true);
+
+  const resolved = resolveLLMForRequest(req, SERVER_ENV);
+  assert.equal(resolved.billingSource, 'platform');
+  assert.equal(resolved.apiKey, 'sk-ant-platform');
 });
 
 test('a friend with no key is refused the platform key', () => {
