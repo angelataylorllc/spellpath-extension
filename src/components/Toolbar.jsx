@@ -80,16 +80,6 @@ const Toolbar = ({ onOpenSettings, onOpenBilling, onSignOut, user, leading }) =>
             {user.name || user.email}
           </span>
         )}
-        {onOpenBilling && (
-          <button
-            type="button"
-            onClick={onOpenBilling}
-            className="toolbar-btn toolbar-btn--text ui-meta text-sm px-2"
-            title="Manage subscription in Stripe"
-          >
-            Billing
-          </button>
-        )}
         {onSignOut && (
           <button
             type="button"
@@ -110,6 +100,17 @@ const Toolbar = ({ onOpenSettings, onOpenBilling, onSignOut, user, leading }) =>
         >
           {mode === 'day' ? <MoonIcon /> : <SunIcon />}
         </button>
+        {onOpenBilling && (
+          <button
+            type="button"
+            onClick={onOpenBilling}
+            className="toolbar-btn"
+            aria-label="Billing"
+            title="Billing"
+          >
+            <SettingsIcon />
+          </button>
+        )}
         {onOpenSettings && (
           <button
             type="button"
