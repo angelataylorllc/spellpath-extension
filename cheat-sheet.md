@@ -21,6 +21,8 @@ npm run build:local:consumer
 
 Prod (hits `https://api.spellpath.app`): `npm run build:byok` and `npm run build:consumer`. Those overwrite the same two folders.
 
+**Load unpacked consumer** (dev OAuth client): set `VITE_GOOGLE_OAUTH_CLIENT_ID_CONSUMER_UNPACKED` in `.env.production`, then `npm run build:consumer:unpacked` or `build:local:consumer` (not `build:consumer` — that is for Store/CWS).
+
 **Chrome — load both**
 
 1. Open `chrome://extensions`

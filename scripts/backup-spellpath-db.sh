@@ -13,5 +13,11 @@ if [[ ! -f "$DB" ]]; then
   exit 1
 fi
 
-sqlite3 "$DB" ".backup '$OUT'"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if command -v sqlite3 >/dev/null 2>&1; then
+  sqlite3 "$DB" ".backup '$OUT'"
+else
+  node "$ROOT/scripts/backup-spellpath-db.mjs" "$DEST"
+  exit $?
+fi
 echo "Wrote $OUT"

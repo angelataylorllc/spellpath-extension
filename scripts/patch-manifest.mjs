@@ -15,17 +15,23 @@ const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
 
 const sharedClientId = String(process.env.VITE_GOOGLE_OAUTH_CLIENT_ID || '').trim();
 const unpackedFriends = String(process.env.VITE_GOOGLE_OAUTH_CLIENT_ID_BYOK_UNPACKED || '').trim();
+const unpackedConsumer = String(process.env.VITE_GOOGLE_OAUTH_CLIENT_ID_CONSUMER_UNPACKED || '').trim();
 const shareFriends = String(process.env.VITE_GOOGLE_OAUTH_CLIENT_ID_BYOK_SHARE || '').trim();
 const useUnpackedFriends =
   edition === 'byok' &&
   ['1', 'true', 'yes'].includes(String(process.env.SPELLPATH_UNPACKED_OAUTH || '').toLowerCase());
+const useUnpackedConsumer =
+  edition === 'consumer' &&
+  ['1', 'true', 'yes'].includes(String(process.env.SPELLPATH_CONSUMER_UNPACKED_OAUTH || '').toLowerCase());
 const useShareZip =
   edition === 'byok' &&
   ['1', 'true', 'yes'].includes(String(process.env.SPELLPATH_SHARE_ZIP || '').toLowerCase());
 
 const editionClientId = String(
   edition === 'consumer'
-    ? process.env.VITE_GOOGLE_OAUTH_CLIENT_ID_CONSUMER || sharedClientId
+    ? useUnpackedConsumer && unpackedConsumer
+      ? unpackedConsumer
+      : process.env.VITE_GOOGLE_OAUTH_CLIENT_ID_CONSUMER || sharedClientId
     : useShareZip && shareFriends
       ? shareFriends
       : useUnpackedFriends && unpackedFriends
