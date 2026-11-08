@@ -31,6 +31,7 @@
 
 /* Shared text colors by mode */
 :root[data-mode="day"] {
+  color-scheme: light;
   --color-text: #1C1C1C;
   --color-text-muted: #4B4B4B;
   --btn-fg: #111111;
@@ -44,6 +45,7 @@
 }
 
 :root[data-mode="night"] {
+  color-scheme: dark;
   --color-text: #F5F5F5;
   --color-text-muted: #C4C4C4;
   --btn-fg: #fafafa;

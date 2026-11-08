@@ -127,10 +127,7 @@ export const Settings = ({ onClose }) => {
               that provider runs your stories. Usage bills to your account.
             </p>
 
-            <div
-              className="rounded-lg border p-3 space-y-1.5 text-sm"
-              style={{ borderColor: 'var(--color-accent-soft)' }}
-            >
+            <div className="genre-well rounded-lg p-3 space-y-1.5 text-sm">
               <p className="text-xs font-medium opacity-70 mb-1">Your saved keys</p>
               {LLM_PROVIDERS.map(id => (
                 <div key={id} className="flex items-center justify-between gap-2">

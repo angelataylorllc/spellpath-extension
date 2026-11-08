@@ -555,6 +555,16 @@
   background: color-mix(in srgb, var(--genre-card-surface) 96%, var(--color-accent) 4%);
 }
 
+/* Gold --color-bg-alt swallows a 32% teal mix; use the light card surface so hover/selected read. */
+:root[data-theme="scifi"][data-mode="day"] .story-choice:hover:not(:disabled):not(.story-choice--correct):not(.story-choice--wrong),
+:root[data-theme="scifi"][data-mode="day"] .story-choice:focus-visible:not(:disabled):not(.story-choice--correct):not(.story-choice--wrong) {
+  background: color-mix(in srgb, var(--color-accent) 42%, var(--genre-card-surface) 58%);
+}
+
+:root[data-theme="scifi"][data-mode="day"] .story-choice--selected {
+  background: color-mix(in srgb, var(--color-accent) 55%, var(--genre-card-surface) 45%);
+}
+
 :root[data-theme="scifi"][data-mode="day"] .story-loading__text,
 :root[data-theme="scifi"][data-mode="day"] .ui-font .ui-subtitle,
 :root[data-theme="scifi"][data-mode="day"] .ui-font .ui-meta {

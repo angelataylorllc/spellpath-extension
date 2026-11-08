@@ -36,36 +36,57 @@
   backdrop-filter: blur(var(--blur-amount));
 }
 
-.scene .genre-input,
-.scene .genre-select {
-  border: 1px solid var(--color-accent-soft);
+.genre-input,
+.genre-select,
+.genre-well {
+  border: 1px solid color-mix(in srgb, var(--color-accent) 50%, var(--color-accent-soft));
   color: var(--color-text);
 }
 
-/* Day: surface tokens are often dark panel colors — use light bg-alt for readable inputs */
-:root[data-mode="day"] .scene .genre-input,
-:root[data-mode="day"] .scene .genre-select {
+.genre-input,
+.genre-select {
+  -webkit-text-fill-color: var(--color-text);
+  caret-color: var(--color-text);
+}
+
+/* Same fill for inputs and inset wells so Settings boxes match each other */
+:root[data-mode="day"] .genre-input,
+:root[data-mode="day"] .genre-select,
+:root[data-mode="day"] .genre-well {
   background-color: var(--genre-card-surface);
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
 }
 
-:root[data-mode="night"] .scene .genre-input,
-:root[data-mode="night"] .scene .genre-select {
-  background-color: color-mix(in srgb, var(--color-surface) 88%, var(--color-bg) 12%);
+:root[data-mode="night"] .genre-input,
+:root[data-mode="night"] .genre-select,
+:root[data-mode="night"] .genre-well {
+  background-color: color-mix(in srgb, var(--color-bg-alt) 62%, var(--color-bg) 38%);
+  border-color: color-mix(in srgb, var(--color-accent) 58%, transparent);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
-.scene .genre-input::placeholder,
-.scene .genre-select::placeholder {
+.genre-input::placeholder,
+.genre-select::placeholder {
   color: var(--color-text-muted);
+  -webkit-text-fill-color: var(--color-text-muted);
 }
 
-.scene .genre-input:focus,
-.scene .genre-select:focus {
+.genre-input:focus,
+.genre-select:focus {
   outline: 2px solid color-mix(in srgb, var(--color-accent) 70%, transparent);
   outline-offset: 1px;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+.genre-input:-webkit-autofill,
+.genre-input:-webkit-autofill:hover,
+.genre-input:-webkit-autofill:focus,
+.genre-select:-webkit-autofill {
+  -webkit-text-fill-color: var(--color-text);
+  caret-color: var(--color-text);
+  box-shadow: 0 0 0 1000px var(--genre-card-surface) inset;
+  transition: background-color 99999s ease-out;
 }
 
 .scene .genre-button {

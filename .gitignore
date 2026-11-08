@@ -37,8 +37,10 @@ data/*.db
 data/*.db-shm
 data/*.db-wal
 
-# Working session notes — local only
+# Working session notes — local only (canonical copy lives in familiar)
 docs/session-notes.md
+# No trailing slash: git treats the symlink as a file, so `sessions/` would not match.
+sessions
 
 # Private keys for a stable Friends share-zip ID
 secrets/

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-// ~15 chars/sec — leisurely story pacing (original was 14ms ≈ 71 chars/sec)
-const CHAR_MS = 65;
+// ~21 chars/sec — halfway between 65ms (~15 chars/sec) and 32ms (~31 chars/sec)
+const CHAR_MS = 48;
 const PARAGRAPH_PAUSE_MS = 1400;
 
 function prefersReducedMotion() {

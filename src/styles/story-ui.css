@@ -171,17 +171,20 @@
   line-height: 1.45;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
-.story-choice:hover:not(:disabled) {
+.story-choice:hover:not(:disabled):not(.story-choice--correct):not(.story-choice--wrong),
+.story-choice:focus-visible:not(:disabled):not(.story-choice--correct):not(.story-choice--wrong) {
   border-color: var(--color-accent);
-  transform: translateX(2px);
+  background: color-mix(in srgb, var(--color-accent) 22%, var(--color-bg-alt));
+  box-shadow: inset 4px 0 0 var(--color-accent);
 }
 
 .story-choice--selected {
   border-color: var(--color-accent);
-  background: color-mix(in srgb, var(--color-accent-soft) 35%, var(--color-bg-alt));
+  background: color-mix(in srgb, var(--color-accent) 32%, var(--color-bg-alt));
+  box-shadow: inset 4px 0 0 var(--color-accent);
 }
 
 .story-choice--correct {
@@ -240,8 +243,16 @@
   padding: 0.625rem 0.75rem;
   border-radius: 0.5rem;
   border-left: 3px solid var(--color-accent);
-  background: var(--color-accent-soft);
   color: var(--color-text);
+}
+
+/* accent-soft is a border/accent chip, not a fill — it washed out text and glared on night sci-fi */
+:root[data-mode="day"] .story-adaptation-notice {
+  background: color-mix(in srgb, var(--color-accent) 14%, var(--genre-card-surface) 86%);
+}
+
+:root[data-mode="night"] .story-adaptation-notice {
+  background: color-mix(in srgb, var(--color-accent) 16%, var(--color-bg-alt) 84%);
 }
 
 .story-adaptation-notice--remedial {
@@ -277,8 +288,8 @@
   font-style: italic;
 }
 
-.story-choice--main-thread {
-  border-color: var(--color-accent);
+.story-choice--main-thread:not(.story-choice--selected) {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-accent-soft));
 }
 
 .story-remedial-badge {
