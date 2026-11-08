@@ -2,11 +2,10 @@
     "manifest_version": 3,
     "name": "Spellpath",
     "permissions": [
-        "storage",
-        "tabs"
+        "storage"
     ],
     "description": "Learn any topic through a short, interactive choose-your-path story. Sign in with Google; optional paid plans via Stripe.",
-    "version": "0.1.2",
+    "version": "0.1.3",
     "background": {
       "service_worker": "background.js"
     },
