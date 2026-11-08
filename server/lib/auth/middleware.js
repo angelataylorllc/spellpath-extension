@@ -1,6 +1,5 @@
 import { getAuthConfig } from './config.js';
 import { assertAllowlisted, AuthError, fetchGoogleUser } from './googleUser.js';
-import { isConsumerEdition } from '../editionHeader.js';
 
 export const SPELLPATH_AUTH_HEADER = 'authorization';
 
@@ -22,8 +21,8 @@ export function createOptionalAuthMiddleware(config = getAuthConfig()) {
     if (!token) return next();
 
     try {
-      const user = await fetchGoogleUser(token);
-      assertAllowlisted(config, user, { consumerClient: isConsumerEdition(req) });
+      const user = await fetchGoogleUser(token, config);
+      assertAllowlisted(config, user);
       req.spellpathUser = user;
     } catch {
       // ignore — requireAuth handles enforcement on protected routes
@@ -46,8 +45,8 @@ export function createRequireAuthMiddleware(config = getAuthConfig()) {
     }
 
     try {
-      const user = await fetchGoogleUser(token);
-      assertAllowlisted(config, user, { consumerClient: isConsumerEdition(req) });
+      const user = await fetchGoogleUser(token, config);
+      assertAllowlisted(config, user);
       req.spellpathUser = user;
       return next();
     } catch (err) {

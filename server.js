@@ -18,6 +18,7 @@ import { normalizeAge } from './lib/ageBand.js';
 import { resolveAuthorVoiceGuide } from './server/lib/resolveAuthorVoice.js';
 import { SPELLPATH_EDITION_HEADER } from './server/lib/editionHeader.js';
 import { getAuthConfig } from './server/lib/auth/config.js';
+import { assertProductionBoot, listenHost } from './server/lib/boot.js';
 import { createRequireAuthMiddleware } from './server/lib/auth/middleware.js';
 import {
   createBillingMiddleware,
@@ -45,7 +46,14 @@ import {
 
 const app = express();
 const port = process.env.PORT || 4000;
+const host = listenHost();
 const authConfig = getAuthConfig();
+try {
+  assertProductionBoot();
+} catch (err) {
+  console.error(err.message);
+  process.exit(1);
+}
 const billingConfig = getBillingConfig();
 const requireAuth = createRequireAuthMiddleware(authConfig);
 const withBilling = createBillingMiddleware(authConfig, billingConfig);
@@ -60,6 +68,18 @@ console.log('Platform keys configured:', platformKeys);
 console.log('BYOK allowed:', process.env.SPELLPATH_ALLOW_BYOK !== 'false');
 console.log('Auth required:', authConfig.authRequired, '| Allowlist size:', authConfig.allowlist.size);
 console.log('Public signup:', authConfig.publicSignup, '| Platform key for allowlist:', billingConfig.platformForAllowlist);
+console.log(
+  'OAuth audiences — consumer:',
+  authConfig.consumerClientIds.size,
+  '| byok:',
+  authConfig.byokClientIds.size,
+);
+if (authConfig.authRequired && authConfig.consumerClientIds.size === 0) {
+  console.warn(
+    '[spellpath] No consumer OAuth client IDs configured. Store tokens cannot be distinguished from Friends. '
+    + 'Set SPELLPATH_OAUTH_CLIENT_IDS_CONSUMER (and _BYOK) from .env.production.',
+  );
+}
 
 // Stripe signs the exact bytes it sent, so this route must see the raw body
 // and therefore has to be mounted before the JSON parser.
@@ -420,8 +440,8 @@ if (authConfig.authRequired) {
   }
 }
 
-app.listen(port, () => {
-  console.log(`SpellPath API running on http://localhost:${port}`);
+app.listen(port, host, () => {
+  console.log(`SpellPath API running on http://${host}:${port}`);
 }).on('error', (err) => {
   if (err.code === 'EADDRINUSE') {
     console.error(`Port ${port} is already in use — another SpellPath API is still running.`);

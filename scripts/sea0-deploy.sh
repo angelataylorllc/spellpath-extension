@@ -19,7 +19,7 @@ export NVM_DIR="${HOME}/.nvm"
 # shellcheck source=/dev/null
 [[ -s "${NVM_DIR}/nvm.sh" ]] && . "${NVM_DIR}/nvm.sh"
 nvm use 24
-pm2 restart spellpath-api
+pm2 startOrReload ecosystem.config.cjs --update-env
 pm2 save 2>/dev/null || true
 
 echo "--- health ---"

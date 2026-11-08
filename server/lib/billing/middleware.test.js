@@ -39,10 +39,9 @@ test('a friend with their own key is not metered and never touches the platform 
   assert.equal(resolved.apiKey, 'sk-their-own');
 });
 
-test('store consumer build ignores invite list and is metered', () => {
+test('store consumer OAuth client ignores invite list and is metered', () => {
   const req = classify(FRIENDS_ONLY, {}, {
-    headers: { [SPELLPATH_EDITION_HEADER]: 'consumer' },
-    spellpathUser: { email: 'cj@example.com', sub: 'g-cj' },
+    spellpathUser: { email: 'learner@example.com', sub: 'g-learner', edition: 'consumer' },
   });
 
   assert.equal(req.spellpathBilling.mode, 'consumer');
@@ -65,6 +64,17 @@ test('a friend with no key is refused the platform key', () => {
   const resolved = resolveLLMForRequest(req, SERVER_ENV);
   assert.equal(resolved.apiKey, null, 'platform key must not leak to an unmetered friend');
   assert.match(resolved.error, /own API key/i);
+});
+
+test('X-SpellPath-Edition cannot grant consumer mode or the platform key', () => {
+  const req = classify(FRIENDS_ONLY, {}, {
+    headers: { [SPELLPATH_EDITION_HEADER]: 'consumer' },
+    spellpathUser: { email: 'stranger@example.com', sub: 'g-x', edition: 'byok' },
+  });
+
+  assert.equal(req.spellpathBilling.mode, 'blocked');
+  assert.equal(req.spellpathBilling.allowPlatformKey, false);
+  assert.equal(resolveLLMForRequest(req, SERVER_ENV).apiKey, null);
 });
 
 test('a stranger is refused entirely while public signup is off', () => {

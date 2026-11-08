@@ -14,8 +14,14 @@ const ENV = {
   SPELLPATH_MAX_BEATS_PER_SESSION: '2',
 };
 
-test('platform daily cap blocks after limit', () => {
+/** getDb() reads process.env, not the ENV object passed to the guards. */
+function useMemoryDb() {
+  process.env.SPELLPATH_DB_PATH = ':memory:';
   closeDb();
+}
+
+test('platform daily cap blocks after limit', () => {
+  useMemoryDb();
   const sub = 'g-test-daily';
 
   assert.equal(checkAndRecordPlatformCall(sub, ENV).ok, true);
@@ -28,7 +34,7 @@ test('platform daily cap blocks after limit', () => {
 });
 
 test('story session binds beats to scaffold', () => {
-  closeDb();
+  useMemoryDb();
   const sub = 'g-test-session';
   const sessionId = createStorySession(sub, 2, ENV);
 
