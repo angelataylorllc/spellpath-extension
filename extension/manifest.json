@@ -6,7 +6,7 @@
         "tabs"
     ],
     "description": "Learn any topic through a short, interactive choose-your-path story. Sign in with Google; optional paid plans via Stripe.",
-    "version": "0.1.1",
+    "version": "0.1.2",
     "background": {
       "service_worker": "background.js"
     },
