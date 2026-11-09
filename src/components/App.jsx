@@ -336,7 +336,7 @@ function App() {
     questions: [
       {
         id: 'u_1',
-        text: 'What is your age range?',
+        text: 'What reading level should the story use?',
         type: 'choice',
         choices: AGE_QUIZ_CHOICES,
       },
